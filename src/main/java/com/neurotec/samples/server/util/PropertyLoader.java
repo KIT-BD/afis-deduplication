@@ -1,5 +1,7 @@
 package com.neurotec.samples.server.util;
 
+import com.neurotec.samples.server.settings.Settings;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +9,7 @@ import java.util.Properties;
 
 public class PropertyLoader {
 
-    private final Properties properties = new Properties();
+    private static final Properties properties = new Properties();
 
     public PropertyLoader() {
         File file = new File("C:/Servers/AFISServer_Asif/application.properties");
@@ -18,43 +20,62 @@ public class PropertyLoader {
         }
     }
 
-    public String getDSN() {
+    public static String getDSN() {
         return properties.getProperty("database.dsn");
     }
 
-    public String getUser() {
+    public static String getUser() {
         return properties.getProperty("database.username");
     }
 
-    public String getPassword() {
+    public static String getPassword() {
         return properties.getProperty("database.password");
     }
 
-    public String getTable() {
+    public static String getTable() {
         return properties.getProperty("database.table");
     }
 
-    public String getTemplateColumn() {
+    public static String getTemplateColumn() {
         return properties.getProperty("database.template.column");
     }
 
-    public String getIdColumn() {
+    public static String getIdColumn() {
         return properties.getProperty("database.id.column");
     }
 
-    public String getServerHost() {
+    public static String getServerHost() {
         return properties.getProperty("server.host");
     }
 
-    public Integer getClientPort() {
+    public static Integer getClientPort() {
         return Integer.parseInt(properties.getProperty("server.client.port"));
     }
 
-    public Integer getAdminPort() {
+    public static Integer getAdminPort() {
         return Integer.parseInt(properties.getProperty("server.admin.port"));
     }
 
     public String getResultDirectory() {
         return properties.getProperty("dir.result");
+    }
+
+    public static Settings getSettings() {
+        Settings settings = Settings.getInstance();
+        
+        // Set connection settings from properties
+        settings.setServer(getServerHost());
+        settings.setClientPort(getClientPort());
+        settings.setAdminPort(getAdminPort());
+        
+        // Set database connection settings
+        settings.setDSN(getDSN());
+        settings.setDBUser(getUser());
+        settings.setDBPassword(getPassword());
+        settings.setTable(getTable());
+        settings.setTemplateColumn(getTemplateColumn());
+        settings.setIdColumn(getIdColumn());
+        
+        return settings;
     }
 }

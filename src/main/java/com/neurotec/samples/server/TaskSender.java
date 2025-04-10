@@ -8,6 +8,7 @@
 /*     */ import com.neurotec.samples.server.connection.TemplateLoader;
 /*     */ import com.neurotec.samples.server.controls.LongTaskDialog;
 /*     */ import com.neurotec.samples.server.settings.Settings;
+import com.neurotec.samples.server.util.PropertyLoader;
 /*     */ import com.neurotec.util.concurrent.CompletionHandler;
 /*     */ import java.awt.Frame;
 /*     */ import java.util.EnumSet;
@@ -143,7 +144,7 @@
 /* 143 */     if (isBusy()) {
 /* 144 */       throw new IllegalAccessException("Already started");
 /*     */     }
-/* 146 */     Settings settings = Settings.getInstance();
+/* 146 */     Settings settings = PropertyLoader.getSettings();
 /* 147 */     this.tasksSentCount = 0;
 /* 148 */     this.tasksCompletedCount = 0;
 /* 149 */     this.isBackgroundWorkerCompleted = false;
