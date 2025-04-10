@@ -53,4 +53,8 @@ public class PropertyLoader {
     public Integer getAdminPort() {
         return Integer.parseInt(properties.getProperty("server.admin.port"));
     }
+
+    public String getResultDirectory() {
+        return properties.getProperty("dir.result");
+    }
 }

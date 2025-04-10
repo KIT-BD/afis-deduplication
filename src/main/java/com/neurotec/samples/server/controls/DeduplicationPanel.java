@@ -14,6 +14,7 @@ import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
+import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.Utils;
 import java.awt.Color;
 import java.awt.Component;
@@ -40,30 +41,15 @@ import javax.swing.JTextField;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 public final class DeduplicationPanel
   extends BasePanel
 {
+
+  PropertyLoader propertyLoader = new PropertyLoader();
   private static final long serialVersionUID = 1L;
   private TaskSender deduplicationTaskSender;
   private long startTime;
-  private String resultsFilePath = System.getProperty("user.dir") + File.separator + "results.csv";
+  private String resultsFilePath = propertyLoader.getResultDirectory() == null ? "result.csv" : propertyLoader.getResultDirectory();
 
   private GridBagUtils gridBagUtils;
 
@@ -157,7 +143,7 @@ public final class DeduplicationPanel
     propertiesPanelLayout.columnWidths = new int[] { 125, 75, 265, 40 };
     this.panelProperties.setLayout(propertiesPanelLayout);
 
-    this.txtResultFilePath = new JTextField("results.csv");
+    this.txtResultFilePath = new JTextField(propertyLoader.getResultDirectory() == null ? "result.csv" : propertyLoader.getResultDirectory());
     this.btnBrowseResultFile = new JButton("...");
     this.btnBrowseResultFile.addActionListener(this);
 
@@ -382,7 +368,7 @@ public final class DeduplicationPanel
 
       this.resultsFilePath = this.txtResultFilePath.getText().trim();
       if (this.resultsFilePath == null || this.resultsFilePath.isEmpty()) {
-        this.resultsFilePath = System.getProperty("user.dir") + File.separator + "results.csv";
+        this.resultsFilePath = propertyLoader.getResultDirectory() == null ? "result.csv" : propertyLoader.getResultDirectory();
         this.txtResultFilePath.setText(this.resultsFilePath);
       }
       writeLogHeader();
