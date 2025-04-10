@@ -342,6 +342,7 @@ public final class DeduplicationPanel
       this.lblStatusIcon.setIcon(this.iconError);
       this.progressBar.setValue(0);
     }
+    System.exit(0);
   }
 
   private void taskSenderProgressChanged(int numberOfTasksCompleted) {
@@ -428,6 +429,9 @@ public final class DeduplicationPanel
           });
       this.lblProgress.setText("");
       this.lblRemaining.setText("");
+      
+      // Automatically start deduplication when panel loads
+      startDeduplication();
     } catch (Exception e) {
       e.printStackTrace();
       MessageUtils.showError(this, e);
