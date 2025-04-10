@@ -265,8 +265,8 @@ public final class MainFrame
     ConnectionSettingsDialog dialog = new ConnectionSettingsDialog(this);
     dialog.setLocationRelativeTo(this);
     dialog.setModal(true);
-    dialog.setVisible(false);
-    connectionSettingsChanged(true);
+    dialog.setVisible(true);
+    connectionSettingsChanged(isLoadingTime);
   }
 
   private void changeConnectionSettings() {

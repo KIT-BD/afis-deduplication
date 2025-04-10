@@ -10,7 +10,7 @@ public class PropertyLoader {
     private final Properties properties = new Properties();
 
     public PropertyLoader() {
-        File file = new File("D:/NeuroTechnology/application.properties");
+        File file = new File("C:/Servers/AFISServer_Asif/application.properties");
         try (FileInputStream fis = new FileInputStream(file)){
             properties.load(fis);
         } catch (IOException e) {

@@ -24,6 +24,7 @@ public final class ConnectionSettingsDialog extends JDialog implements ActionLis
   private GridBagUtils gridBagUtils;
   private final Settings settings = Settings.getInstance();
 
+
   private JTextField txtServer;
 
   private JSpinner spinnerClientPort;
