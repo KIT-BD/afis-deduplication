@@ -81,8 +81,19 @@ public final class DirectoryEnumerator
 
 
   public int getTemplateCount() {
-    listFiles();
-    return this.resultCount;
+    try {
+      listFiles();
+      if (this.files == null) {
+        System.err.println("No files found in directory: " + this.directory.getAbsolutePath());
+        return 0;
+      }
+      System.out.println("Found " + this.resultCount + " files in directory: " + this.directory.getAbsolutePath());
+      return this.resultCount;
+    } catch (Exception e) {
+      System.err.println("Error listing files in directory: " + this.directory.getAbsolutePath());
+      e.printStackTrace();
+      return 0;
+    }
   }
 
 
@@ -96,13 +107,35 @@ public final class DirectoryEnumerator
 
   public synchronized void listFiles() {
     if (this.files == null) {
-      this.files = this.directory.listFiles(new FileFilter()
-          {
-            public boolean accept(File pathname) {
-              return pathname.isFile();
-            }
-          });
-      this.resultCount = this.files.length;
+      if (!this.directory.exists()) {
+        System.err.println("Directory does not exist: " + this.directory.getAbsolutePath());
+        this.files = new File[0];
+        this.resultCount = 0;
+        return;
+      }
+      
+      if (!this.directory.isDirectory()) {
+        System.err.println("Path is not a directory: " + this.directory.getAbsolutePath());
+        this.files = new File[0];
+        this.resultCount = 0;
+        return;
+      }
+      
+      System.out.println("Listing files in directory: " + this.directory.getAbsolutePath());
+      this.files = this.directory.listFiles(new FileFilter() {
+        public boolean accept(File pathname) {
+          return pathname.isFile();
+        }
+      });
+      
+      if (this.files == null) {
+        System.err.println("Failed to list files, listFiles() returned null. Check permissions for: " + this.directory.getAbsolutePath());
+        this.files = new File[0];
+        this.resultCount = 0;
+      } else {
+        this.resultCount = this.files.length;
+        System.out.println("Found " + this.resultCount + " files");
+      }
     }
   }
 }

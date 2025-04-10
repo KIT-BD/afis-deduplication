@@ -264,26 +264,47 @@ public class DatabaseConnection implements TemplateLoader {
     if (this.isStarted) {
       throw new IllegalStateException("Can not get count while loading started");
     }
-    connect();
-    Statement stat = null;
-    ResultSet res = null;
+    System.out.println("Getting template count from database: " + this.dsn);
+    
     try {
-      stat = this.connection.createStatement();
-      res = stat.executeQuery(String.format("SELECT COUNT(*) FROM %s", new Object[] { this.table }));
+      connect();
+      System.out.println("Connected to database successfully");
+      
+      Statement stat = null;
+      ResultSet res = null;
+      try {
+        stat = this.connection.createStatement();
+        String query = String.format("SELECT COUNT(*) FROM %s", new Object[] { this.table });
+        System.out.println("Executing query: " + query);
+        
+        res = stat.executeQuery(query);
 
-      if (res.next()) {
-        return res.getInt(1);
+        if (res.next()) {
+          int count = res.getInt(1);
+          System.out.println("Template count: " + count);
+          return count;
+        } else {
+          System.err.println("No results returned from count query");
+          return 0;
+        }
+      } catch (SQLException e) {
+        System.err.println("SQL error executing count query: " + e.getMessage());
+        e.printStackTrace();
+        throw e;
+      } finally {
+        if (res != null) {
+          res.close();
+        }
+        if (stat != null) {
+          stat.close();
+        }
+        closeConnection();
       }
-    } finally {
-      if (res != null) {
-        res.close();
-      }
-      if (stat != null) {
-        stat.close();
-      }
-      closeConnection();
+    } catch (SQLException e) {
+      System.err.println("Database connection error: " + e.getMessage());
+      e.printStackTrace();
+      throw e;
     }
-    return -1;
   }
 
   public final void checkConnection() throws SQLException {

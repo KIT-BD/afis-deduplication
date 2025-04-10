@@ -3,10 +3,12 @@ package com.kit.biometric;
 import com.neurotec.licensing.NLicense;
 import com.neurotec.samples.server.MainFrame;
 import com.neurotec.samples.server.util.MessageUtils;
+import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.LibraryManager;
 import com.neurotec.samples.util.Utils;
 import java.awt.Dimension;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import javax.swing.SwingUtilities;
 
@@ -23,6 +25,8 @@ public final class AFISServer {
   public static void main(String[] args) {
     Utils.setupLookAndFeel();
     System.out.println(System.getProperty("user.home"));
+
+    PropertyLoader.fileName = args[0];
 
     LibraryManager.initLibraryPath();
     licenses = new ArrayList<>();

@@ -3,15 +3,13 @@ package com.neurotec.samples.server.settings;
 import com.neurotec.biometrics.NMFusionType;
 import com.neurotec.biometrics.NMatchingSpeed;
 import com.neurotec.biometrics.client.NBiometricClient;
+import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.Utils;
 import java.io.File;
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.core.Persister;
 
-
-
-
-
+import static com.neurotec.samples.server.util.PropertyLoader.*;
 
 
 public final class Settings implements Cloneable {
@@ -19,14 +17,16 @@ public final class Settings implements Cloneable {
   private static Settings defaultInstance;
   private static final String PROJECT_NAME = "server-sample";
   private static final String PROJECT_DATA_FOLDER = Utils.getHomeDirectory() + Utils.FILE_SEPARATOR + ".neurotec" + Utils.FILE_SEPARATOR + "server-sample";
-  private static final String SETTINGS_FILE_PATH = getSettingsFolder() + Utils.FILE_SEPARATOR + "user.xml"; @Element private int matchingThreshold; @Element private NMFusionType fusionMode; @Element private NMatchingSpeed fingersMatchingSpeed; @Element private int fingersMatchingMode; @Element private int fingersMaximalRotation; @Element
+  private static final String SETTINGS_FILE_PATH = getSettingsFolder() + Utils.FILE_SEPARATOR + "user.xml";
+  @Element private int matchingThreshold; @Element private NMFusionType fusionMode; @Element private NMatchingSpeed fingersMatchingSpeed; @Element private int fingersMatchingMode; @Element private int fingersMaximalRotation; @Element
   private int fingersMinMatchedFingerCount; @Element
   private int fingersMinMatchedFingerCountThreshold; @Element
   private NMatchingSpeed facesMatchingSpeed; @Element
   private int facesMatchingThreshold; @Element
   private NMatchingSpeed irisesMatchingSpeed; @Element
   private int irisesMatchingThreshold; @Element
-  private int irisesMaximalRotation; private static String getSettingsFolder() { File settingsFolder = new File(PROJECT_DATA_FOLDER);
+  private int irisesMaximalRotation;
+  private static String getSettingsFolder() { File settingsFolder = new File(PROJECT_DATA_FOLDER);
     if (!settingsFolder.exists()) {
       settingsFolder.mkdirs();
     }
@@ -167,7 +167,8 @@ public final class Settings implements Cloneable {
     File file = new File(SETTINGS_FILE_PATH);
     Persister persister = new Persister();
     try {
-      instance = (Settings)persister.read(Settings.class, file);
+//      instance = (Settings) persister.read(Settings.class, file);
+      instance = PropertyLoader.getSettings();
     } catch (Exception e) {
       try {
         instance = (Settings)getDefaultInstance().clone();
@@ -214,24 +215,24 @@ public final class Settings implements Cloneable {
   }
 
   public void loadDefaultConnectionSettings() {
-    setServer("localhost");
-    setClientPort(25452);
-    setAdminPort(24932);
+    setServer(getServerHost());
+    setClientPort(getClientPort());
+    setAdminPort(getAdminPort());
 
     setTemplateSourceDb(false);
     setTemplateDirectory(System.getProperty("user.dir"));
 
-    setTable("templates");
-    setTemplateColumn("template");
-    setIdColumn("dbid");
+    setTable(PropertyLoader.getTable());
+    setTemplateColumn(getTemplateColumn());
+    setIdColumn(getIdColumn());
   }
 
 
   public void loadDefaultDatabaseConnectionSettings() {
-    setDSN("mysql_dsn");
-    setDBUser("user");
-    setDBPassword("pass");
-    setDSNConnection(false);
+    setDSN(PropertyLoader.getDSN());
+    setDBUser(getUser());
+    setDBPassword(getPassword());
+    setDSNConnection(true);
   }
 
 

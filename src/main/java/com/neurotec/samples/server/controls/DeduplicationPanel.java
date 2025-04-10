@@ -357,6 +357,7 @@ public final class DeduplicationPanel
   private void startDeduplication() {
     try {
       if (isBusy()) {
+        MessageUtils.showInformation(this, "Previous process is not completed yet.");
         return;
       }
       setStatus("Preparing ...", Color.BLACK, (Icon)null);
@@ -374,8 +375,22 @@ public final class DeduplicationPanel
       writeLogHeader();
 
       this.progressBar.setValue(0);
-      int templateCount = getTemplateCount();
-      this.progressBar.setMaximum(templateCount);
+      try {
+        int templateCount = getTemplateCount();
+        if (templateCount <= 0) {
+          MessageUtils.showInformation(this, "No templates found or error retrieving template count. Please check connection settings and permissions.");
+          setStatus("No templates found or error retrieving template count.", Color.RED.darker(), this.iconError);
+          return;
+        }
+        this.progressBar.setMaximum(templateCount);
+        this.lblProgress.setText(String.format("0 / %s", Integer.valueOf(templateCount)));
+      } catch (Exception e) {
+        System.err.println("Error getting template count: " + e.getMessage());
+        e.printStackTrace();
+        MessageUtils.showError(this, "Error getting template count: " + e.getMessage());
+        setStatus("Error getting template count: " + e.getMessage(), Color.RED.darker(), this.iconError);
+        return;
+      }
 
       getBiometricClient().setMatchingWithDetails(true);
       this.deduplicationTaskSender.setBunchSize(350);

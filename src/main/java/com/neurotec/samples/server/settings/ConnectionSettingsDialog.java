@@ -3,6 +3,8 @@ package com.neurotec.samples.server.settings;
 import com.neurotec.samples.server.connection.DatabaseConnection;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
+import com.neurotec.samples.server.util.PropertyLoader;
+
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -22,7 +24,7 @@ import javax.swing.*;
 public final class ConnectionSettingsDialog extends JDialog implements ActionListener {
   private static final long serialVersionUID = 1L;
   private GridBagUtils gridBagUtils;
-  private final Settings settings = Settings.getInstance();
+  private final Settings settings = PropertyLoader.getSettings();
 
 
   private JTextField txtServer;
@@ -377,7 +379,7 @@ public final class ConnectionSettingsDialog extends JDialog implements ActionLis
 
       setTableSettingSelectionEnabled(true);
     } catch (SQLException ex) {
-      this.settings.setDSNConnection(false);
+      this.settings.setDSNConnection(true);
       MessageUtils.showError(this, "Database connetion failed due to: %s", new Object[] { ex });
     }
   }
@@ -483,6 +485,7 @@ public final class ConnectionSettingsDialog extends JDialog implements ActionLis
       applyChanges();
     } else if (source == this.btnCancel) {
       this.settings.load();
+      applyChanges();
       dispose();
     }
   }

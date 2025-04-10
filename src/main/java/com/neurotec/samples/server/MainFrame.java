@@ -13,13 +13,10 @@ import com.neurotec.samples.server.settings.ConnectionSettingsDialog;
 import com.neurotec.samples.server.settings.MatchingSettingsPanel;
 import com.neurotec.samples.server.settings.Settings;
 import com.neurotec.samples.server.util.MessageUtils;
+import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.Utils;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Dimension;
+
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -78,7 +75,7 @@ public final class MainFrame
 
 
 
-  private Settings settings = Settings.getInstance();
+  private Settings settings = PropertyLoader.getSettings();
   private Dimension buttonSize = new Dimension(185, 40);
 
 
@@ -265,7 +262,7 @@ public final class MainFrame
     ConnectionSettingsDialog dialog = new ConnectionSettingsDialog(this);
     dialog.setLocationRelativeTo(this);
     dialog.setModal(true);
-    dialog.setVisible(true);
+    dialog.setVisible(false);
     connectionSettingsChanged(isLoadingTime);
   }
 
@@ -365,7 +362,7 @@ public final class MainFrame
   }
 
   private void updateConnectionInformation() {
-    boolean isUseDB = this.settings.isTemplateSourceDb();
+    boolean isUseDB = true;
     if (!isUseDB) {
       this.lblSourceValue.setText(this.settings.getTemplateDirectory());
       this.templateLoader = (TemplateLoader)new DirectoryEnumerator(this.settings.getTemplateDirectory());

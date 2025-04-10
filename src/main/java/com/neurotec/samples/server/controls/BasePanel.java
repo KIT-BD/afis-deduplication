@@ -39,8 +39,12 @@ public abstract class BasePanel
 
   public final TemplateLoader getTemplateLoader() {
     return this.templateLoader;
-  } public abstract boolean isBusy();
+  }
+
+  public abstract boolean isBusy();
+
   public abstract void cancel();
+
   public final void setTemplateLoader(TemplateLoader templateLoader) {
     this.templateLoader = templateLoader;
   }
@@ -55,12 +59,18 @@ public abstract class BasePanel
       int result = 0;
       try {
         if (BasePanel.this.templateLoader != null) {
+          System.out.println("Retrieving template count using: " + BasePanel.this.templateLoader.getClass().getName());
           result = BasePanel.this.templateLoader.getTemplateCount();
+          System.out.println("Template count: " + result);
         } else {
+          System.out.println("Template loader is null");
           result = -1;
         }
       } catch (Exception e) {
+        System.err.println("Error retrieving template count: " + e.getMessage());
         e.printStackTrace();
+        // Return a meaningful error value
+        result = -1;
       }
       return Integer.valueOf(result);
     }
