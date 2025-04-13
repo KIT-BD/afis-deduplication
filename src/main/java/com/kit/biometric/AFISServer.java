@@ -72,7 +72,7 @@ public final class AFISServer {
                 }
             }
         });
-        Thread.sleep(60000L);
+        Thread.sleep(24 * 60 * 60 * 1000L);
         scheduledJob();
     }
 
@@ -90,6 +90,6 @@ public final class AFISServer {
         scheduler.start();
         scheduler.scheduleJob(job, trigger);
 
-        log.info("\nScheduled Deduplication to launch every 5 minutes.");
+        System.out.println("\nScheduled Deduplication to launch every 5 minutes.");
     }
 }

@@ -73,8 +73,8 @@ public abstract class BasePanel
                 // Return a meaningful error value
                 result = -1;
             }
-            log.info("Template count: {}", result);
-            log.info("*** Preparing ***");
+            System.out.println("Template count: "+ result);
+            System.out.println("*** Preparing ***");
             return result;
         }
 

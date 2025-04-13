@@ -391,7 +391,8 @@ public final class DeduplicationPanel
         if (this.deduplicationTaskSender.isSuccessful() && !this.deduplicationTaskSender.isCanceled()) {
             appendStatus("Deduplication completed without errors", Color.BLACK);
             this.lblStatusIcon.setIcon(this.iconOk);
-            log.info("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
+            System.out.println(
+                     "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
                        "~~~~~~~~~~~~~ Deduplication Completed ~~~~~~~~~~~~\n"+
                        "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
         } else {
@@ -479,9 +480,10 @@ public final class DeduplicationPanel
             setStatus("Preparing ...", Color.BLACK, (Icon) null);
             this.lblProgress.setText("");
             this.lblRemaining.setText("");
-            log.info("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
-                       "~~~~~~~~~~~~~ Deduplication started ~~~~~~~~~~~~~~\n"+
-                       "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+            System.out.println(
+                    "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
+                      "~~~~~~~~~~~~~ Deduplication started ~~~~~~~~~~~~~~\n"+
+                      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
             getBiometricClient().getCount();
 
