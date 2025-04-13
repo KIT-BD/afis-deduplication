@@ -24,7 +24,7 @@ public final class LongTaskDialog
     public static Object runLongTask(Frame owner, String title, LongTask longTask) throws InterruptedException, ExecutionException {
         LongTaskDialog frmLongTask = new LongTaskDialog(owner, title, longTask);
         frmLongTask.setLocationRelativeTo(owner);
-        frmLongTask.setVisible(true);
+        frmLongTask.backgroundWorker.execute();
         return frmLongTask.backgroundWorker.get();
     }
 
