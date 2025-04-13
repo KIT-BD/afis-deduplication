@@ -391,6 +391,9 @@ public final class DeduplicationPanel
         if (this.deduplicationTaskSender.isSuccessful() && !this.deduplicationTaskSender.isCanceled()) {
             appendStatus("Deduplication completed without errors", Color.BLACK);
             this.lblStatusIcon.setIcon(this.iconOk);
+            log.info("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
+                       "~~~~~~~~~~~~~ Deduplication Completed ~~~~~~~~~~~~\n"+
+                       "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
         } else {
             appendStatus(this.deduplicationTaskSender.isCanceled() ? "Deduplication canceled." : "There were errors during deduplication", Color.RED.darker());
             this.btnStart.setEnabled(true);
@@ -398,7 +401,7 @@ public final class DeduplicationPanel
             this.progressBar.setValue(0);
         }
         // Don't exit automatically, let user decide from tray menu
-         System.exit(0);
+//         System.exit(0);
     }
 
     private void taskSenderProgressChanged(int numberOfTasksCompleted) {

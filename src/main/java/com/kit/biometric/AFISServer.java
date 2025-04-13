@@ -2,21 +2,27 @@ package com.kit.biometric;
 
 import com.neurotec.licensing.NLicense;
 import com.neurotec.samples.server.MainFrame;
+import com.neurotec.samples.server.services.DeduplicationJob;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.LibraryManager;
 import com.neurotec.samples.util.Utils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
 
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 
 
 public final class AFISServer {
     static Collection<String> licenses = null;
-    public static void main(String[] args) {
+    private static final Logger log = LogManager.getLogger(AFISServer.class);
+
+    public static void main(String[] args) throws SchedulerException, InterruptedException {
         Utils.setupLookAndFeel();
         System.out.println(System.getProperty("user.home"));
 
@@ -66,11 +72,24 @@ public final class AFISServer {
                 }
             }
         });
+        Thread.sleep(60000L);
+        scheduledJob();
+    }
+
+    private static void scheduledJob() throws SchedulerException {
+        JobDetail job = JobBuilder.newJob(DeduplicationJob.class)
+                .withIdentity("guiJob", "group1")
+                .build();
+
+        Trigger trigger = TriggerBuilder.newTrigger()
+                .withIdentity("cronTrigger", "group1")
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0/5 * * * ?"))
+                .build();
+
+        Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
+        scheduler.start();
+        scheduler.scheduleJob(job, trigger);
+
+        log.info("\nScheduled Deduplication to launch every 5 minutes.");
     }
 }
-
-
-/* Location:              D:\NeuroTechnology\AFISServerNative.jar!\com\kit\biometric\AFISServer.class
- * Java compiler version: 8 (52.0)
- * JD-Core Version:       1.1.3
- */
