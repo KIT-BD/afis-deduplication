@@ -74,6 +74,7 @@ public abstract class BasePanel
                 result = -1;
             }
             log.info("Template count: {}", result);
+            log.info("*** Preparing ***");
             return result;
         }
 

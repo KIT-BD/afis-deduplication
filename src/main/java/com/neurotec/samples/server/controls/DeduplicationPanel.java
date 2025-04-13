@@ -24,7 +24,14 @@ import java.awt.Component;
 import java.awt.Frame;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.AWTException;
 import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -43,6 +50,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
+import javax.swing.ImageIcon;
 
 public final class DeduplicationPanel
         extends BasePanel {
@@ -76,9 +84,13 @@ public final class DeduplicationPanel
     private JTextField txtResultFilePath;
     private JTextArea txtStatus;
     private JFileChooser openFileDialog;
+    private TrayIcon trayIcon;
+    private SystemTray systemTray;
+    private Frame ownerFrame;
 
     public DeduplicationPanel(Frame owner) {
         super(owner);
+        this.ownerFrame = owner;
         initializeComponents();
         this.openFileDialog = new JFileChooser(this.resultsFilePath);
         addAncestorListener(new AncestorListener() {
@@ -92,8 +104,66 @@ public final class DeduplicationPanel
                 DeduplicationPanel.this.deduplicationPanelLoaded();
             }
         });
+        
+        if (SystemTray.isSupported()) {
+            setupSystemTray();
+        } else {
+            log.warn("System tray is not supported on this platform");
+        }
     }
 
+    private void setupSystemTray() {
+        try {
+            systemTray = SystemTray.getSystemTray();
+            PopupMenu popup = new PopupMenu();
+            
+            MenuItem showItem = new MenuItem("Show");
+            showItem.addActionListener(e -> {
+                if (ownerFrame != null) {
+                    ownerFrame.setVisible(true);
+                    ownerFrame.setState(Frame.NORMAL);
+                }
+            });
+            
+            MenuItem exitItem = new MenuItem("Exit");
+            exitItem.addActionListener(e -> {
+                systemTray.remove(trayIcon);
+                System.exit(0);
+            });
+            
+            popup.add(showItem);
+            popup.addSeparator();
+            popup.add(exitItem);
+            
+            int width = 16;
+            int height = 16;
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    image.setRGB(x, y, Color.GRAY.getRGB());
+                }
+            }
+            
+            trayIcon = new TrayIcon(image, "AFIS Deduplication", popup);
+            trayIcon.setImageAutoSize(true);
+            
+            systemTray.add(trayIcon);
+            
+            trayIcon.addActionListener(e -> {
+                if (ownerFrame != null) {
+                    ownerFrame.setVisible(true);
+                    ownerFrame.setState(Frame.NORMAL);
+                }
+            });
+            
+            if (ownerFrame != null) {
+                ownerFrame.setVisible(false);
+            }
+        } catch (AWTException e) {
+            log.error("Error setting up system tray", e);
+        }
+    }
 
     private void initializeComponents() {
         this.gridBagUtils = new GridBagUtils(1, new Insets(3, 3, 3, 3));
@@ -327,7 +397,8 @@ public final class DeduplicationPanel
             this.lblStatusIcon.setIcon(this.iconError);
             this.progressBar.setValue(0);
         }
-        System.exit(0);
+        // Don't exit automatically, let user decide from tray menu
+         System.exit(0);
     }
 
     private void taskSenderProgressChanged(int numberOfTasksCompleted) {
@@ -446,6 +517,11 @@ public final class DeduplicationPanel
             this.startTime = System.currentTimeMillis();
             this.deduplicationTaskSender.start();
             enableControls(false);
+            
+            // Minimize to tray when task starts
+            if (ownerFrame != null) {
+                ownerFrame.setVisible(false);
+            }
         } catch (Exception e) {
             e.fillInStackTrace();
             MessageUtils.showError(this, e);
