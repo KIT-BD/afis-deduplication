@@ -66,7 +66,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private BasePanel activePanel;
 
     public MainFrame() {
-        setIconImage(Utils.createIconImage("images/Logo16x16.png"));
+        setType(Type.UTILITY);
         initializeComponents();
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -262,7 +262,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         }
 
         this.activePanel = this.panels.get(index);
-
+        
         for (int i = 1; i < 5; i++) {
             Border border = BorderFactory.createLineBorder((index == i - 1) ? SELECTED_BUTTON_COLOR : NOT_SELECTED_BUTTON_COLOR);
             this.mainFrameButtons[i].setBorder(border);
@@ -327,7 +327,9 @@ public final class MainFrame extends JFrame implements ActionListener {
     }
 
     public void showMainFrame() {
-        setVisible(false);
+        setMinimumSize(new Dimension(1, 1));
+        setLocation(-1000, -1000);
+        setVisible(true);
         showConnectionSettings(true);
     }
 
