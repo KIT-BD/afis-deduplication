@@ -17,7 +17,7 @@ public class PropertyLoader {
 //        File file = new File("D:/NeuroTechnology/application.properties");
 //        System.out.println(fileName);
         File file = new File(fileName);
-        try (FileInputStream fis = new FileInputStream(file)){
+        try (FileInputStream fis = new FileInputStream(file)) {
             properties.load(fis);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -66,12 +66,12 @@ public class PropertyLoader {
 
     public static Settings getSettings() {
         Settings settings = Settings.getInstance();
-        
+
         // Set connection settings from properties
         settings.setServer(getServerHost());
         settings.setClientPort(getClientPort());
         settings.setAdminPort(getAdminPort());
-        
+
         // Set database connection settings
         settings.setDSN(getDSN());
         settings.setDBUser(getUser());
@@ -79,7 +79,7 @@ public class PropertyLoader {
         settings.setTable(getTable());
         settings.setTemplateColumn(getTemplateColumn());
         settings.setIdColumn(getIdColumn());
-        
+
         return settings;
     }
 }
