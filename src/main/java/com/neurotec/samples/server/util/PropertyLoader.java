@@ -5,6 +5,8 @@ import com.neurotec.samples.server.settings.Settings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 public class PropertyLoader {
@@ -61,7 +63,10 @@ public class PropertyLoader {
     }
 
     public String getResultDirectory() {
-        return properties.getProperty("dir.result");
+        Date now = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd_MM_yy_(HH_mm_ss)");
+        String dirResult = properties.getProperty("dir.result");
+        return dirResult.split(".csv")[0]+"_"+sdf.format(now)+".csv";
     }
 
     public static Settings getSettings() {

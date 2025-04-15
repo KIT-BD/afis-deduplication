@@ -55,25 +55,25 @@ public final class AFISServer {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    MainFrame frame = new MainFrame();
-                    Dimension d = new Dimension(935, 450);
-                    frame.setSize(d);
-                    frame.setMinimumSize(d);
-                    frame.setPreferredSize(d);
-
-                    frame.setResizable(true);
-                    frame.setDefaultCloseOperation(2);
-                    frame.setTitle("Server Sample");
-                    frame.setLocationRelativeTo(null);
-                    frame.showMainFrame();
+//                    MainFrame frame = new MainFrame();
+//                    Dimension d = new Dimension(935, 450);
+//                    frame.setSize(d);
+//                    frame.setMinimumSize(d);
+//                    frame.setPreferredSize(d);
+//
+//                    frame.setResizable(true);
+//                    frame.setDefaultCloseOperation(2);
+//                    frame.setTitle("Server Sample");
+//                    frame.setLocationRelativeTo(null);
+//                    frame.showMainFrame();
+//                    Thread.sleep(24 * 60 * 60 * 1000L);
+                    scheduledJob();
                 } catch (Exception e) {
                     e.printStackTrace();
                     MessageUtils.showError(null, e);
                 }
             }
         });
-        Thread.sleep(24 * 60 * 60 * 1000L);
-        scheduledJob();
     }
 
     private static void scheduledJob() throws SchedulerException {
@@ -83,13 +83,17 @@ public final class AFISServer {
 
         Trigger trigger = TriggerBuilder.newTrigger()
                 .withIdentity("cronTrigger", "group1")
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 0/5 * * * ?"))
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
                 .build();
 
         Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
+
         scheduler.scheduleJob(job, trigger);
 
-        System.out.println("\nScheduled Deduplication to launch every 5 minutes.");
+        scheduler.triggerJob(job.getKey());
+
+        System.out.println("\nScheduled Deduplication to run daily at midnight and once on startup.");
     }
+
 }
