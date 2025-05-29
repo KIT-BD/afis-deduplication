@@ -83,7 +83,7 @@ public final class AFISServer {
 
         Trigger trigger = TriggerBuilder.newTrigger()
                 .withIdentity("cronTrigger", "group1")
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0/2 0 * * ?"))
                 .build();
 
         Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();

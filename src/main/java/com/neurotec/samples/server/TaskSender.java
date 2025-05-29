@@ -193,6 +193,9 @@ public final class TaskSender {
                         break;
                     }
 
+                    // Log the batch progress
+                    System.out.println("Processing batch of " + subjects.length + " templates. Total processed: " + TaskSender.this.tasksSentCount);
+
                     if (TaskSender.this.operation == NBiometricOperation.IDENTIFY) {
                         for (NSubject subject : subjects) {
                             while (TaskSender.this.tasksSentCount - TaskSender.this.tasksCompletedCount > TaskSender.this.maxActiveTaskCount && !TaskSender.this.canceled) {

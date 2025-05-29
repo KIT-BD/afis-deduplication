@@ -36,7 +36,16 @@ public final class DirectoryEnumerator
             throw new IllegalStateException();
         }
         listFiles();
-        this.index = 0;
+        
+        // Validate that the starting index is within bounds
+        int startIndex = 300;
+        if (startIndex >= this.resultCount) {
+            System.err.println("Starting index " + startIndex + " is greater than or equal to the total template count of " + this.resultCount);
+            this.index = 0; // Fall back to starting from 0
+        } else {
+            this.index = startIndex;
+            System.out.println("Starting template processing from index " + startIndex + " of " + this.resultCount);
+        }
     }
 
 
@@ -56,6 +65,10 @@ public final class DirectoryEnumerator
         int count = this.resultCount - this.index;
         count = (count > n) ? n : count;
         NSubject[] results = new NSubject[count];
+        
+        // Log batch start
+        System.out.println("\nStarting to load batch of " + count + " templates (from " + (this.index + 1) + " to " + (this.index + count) + " of " + this.resultCount + ")");
+        
         for (int i = 0; i < count; i++) {
             File file = this.files[this.index++];
             String id = file.getName();
@@ -64,7 +77,15 @@ public final class DirectoryEnumerator
             result.setTemplateBuffer(template);
             result.setId(id);
             results[i] = result;
+            
+            // Log progress for each template
+            System.out.println("Loaded template: " + this.index + " of " + this.resultCount + 
+                              " (" + String.format("%.2f", (this.index * 100.0 / this.resultCount)) + "%)");
         }
+        
+        // Log batch completion
+        System.out.println("Completed loading batch of " + count + " templates. Total loaded: " + this.index + " of " + this.resultCount);
+        
         return results;
     }
 

@@ -51,6 +51,7 @@ import javax.swing.JTextField;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import javax.swing.ImageIcon;
+import javax.swing.SwingUtilities;
 
 public final class DeduplicationPanel
         extends BasePanel {
@@ -87,6 +88,8 @@ public final class DeduplicationPanel
     private TrayIcon trayIcon;
     private SystemTray systemTray;
     private Frame ownerFrame;
+    private int startIndex;
+    private boolean processCompleted = false;
 
     public DeduplicationPanel(Frame owner) {
         super(owner);
@@ -406,6 +409,10 @@ public final class DeduplicationPanel
     }
 
     private void taskSenderProgressChanged(int numberOfTasksCompleted) {
+        if (processCompleted) {
+            return;
+        }
+        
         if (numberOfTasksCompleted == 1) {
             setStatus("Matching templates ...\r\n", Color.BLACK, (Icon) null);
         }
@@ -437,17 +444,45 @@ public final class DeduplicationPanel
                     sec
             );
         }
-        if (numberOfTasksCompleted > this.progressBar.getMaximum()) {
-            this.progressBar.setValue(this.progressBar.getMaximum());
-        } else {
-            this.progressBar.setValue(numberOfTasksCompleted);
+        
+        // Calculate the actual progress value (starting from startIndex)
+        int actualProgress = this.startIndex + numberOfTasksCompleted;
+        
+        // Ensure we don't exceed the maximum template count
+        if (actualProgress > this.progressBar.getMaximum()) {
+            actualProgress = this.progressBar.getMaximum();
+            // If we've reached the maximum, cancel the task to prevent further processing
+            if (this.deduplicationTaskSender != null && this.deduplicationTaskSender.isBusy()) {
+                System.out.println("\nReached maximum template count of " + this.progressBar.getMaximum() + ". Completing deduplication process.");
+                this.deduplicationTaskSender.cancel();
+                
+                // Set the process as completed to prevent further progress updates
+                processCompleted = true;
+                
+                // Manually trigger task completion to ensure the process finishes properly
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        taskSenderFinished();
+                    }
+                });
+            }
         }
+        
+        this.progressBar.setValue(actualProgress);
+        
         this.lblProgress.setText(String.format("%s / %s", new Object[]{
-                numberOfTasksCompleted,
+                actualProgress,
                 this.progressBar.getMaximum()
         }));
-        showProgress(numberOfTasksCompleted, this.progressBar.getMaximum(), eta);
-
+        
+        // Show progress bar in console
+        showProgress(actualProgress, this.progressBar.getMaximum(), eta);
+        
+        // Add detailed progress logging for each template
+        System.out.println("\nProgress: " + numberOfTasksCompleted + " templates processed since index " + this.startIndex + 
+                          " (Template " + actualProgress + " of " + this.progressBar.getMaximum() + 
+                          ", " + String.format("%.2f", (actualProgress * 100.0 / this.progressBar.getMaximum())) + "%)");
     }
 
     private void showProgress(int completed, int total, String eta) {
@@ -495,6 +530,7 @@ public final class DeduplicationPanel
             writeLogHeader();
 
             this.progressBar.setValue(0);
+            this.processCompleted = false;
             try {
                 int templateCount = getTemplateCount();
                 if (templateCount <= 0) {
@@ -502,9 +538,20 @@ public final class DeduplicationPanel
                     setStatus("No templates found or error retrieving template count.", Color.RED.darker(), this.iconError);
                     return;
                 }
+                
+                // Set the progress bar maximum to the total template count
                 this.progressBar.setMaximum(templateCount);
                 this.lblProgress.setText(String.format("0 / %s", templateCount));
-//                log.info("0 / {}", templateCount);
+                
+                // Store the starting index for later use
+                this.startIndex = 300;
+                if (this.startIndex >= templateCount) {
+                    MessageUtils.showInformation(this, "Starting index " + this.startIndex + " is greater than or equal to the total template count of " + templateCount + ".");
+                    setStatus("Starting index " + this.startIndex + " is greater than or equal to the total template count.", Color.RED.darker(), this.iconError);
+                    return;
+                }
+                
+                System.out.println("Starting from index " + this.startIndex + ", processing templates " + this.startIndex + " to " + (templateCount - 1) + " out of " + templateCount + " total templates");
 
             } catch (Exception e) {
                 System.err.println("Error getting template count: " + e.getMessage());
