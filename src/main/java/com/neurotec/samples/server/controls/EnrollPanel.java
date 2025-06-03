@@ -59,10 +59,8 @@ public final class EnrollPanel
             public void ancestorRemoved(AncestorEvent event) {
             }
 
-
             public void ancestorMoved(AncestorEvent event) {
             }
-
 
             public void ancestorAdded(AncestorEvent event) {
                 EnrollPanel.this.enrollPanelLoaded();
@@ -99,6 +97,14 @@ public final class EnrollPanel
         this.gridBagUtils.addToGridBagLayout(4, 2, 1, 1, 0, 0, this, this.lblProgress);
         this.gridBagUtils.addToGridBagLayout(0, 3, 5, 1, this, this.progressBar);
         this.gridBagUtils.addToGridBagLayout(0, 4, 5, 1, 0, 1, this, initializeResultsPanel());
+    }
+
+    public void triggerAutoStartIfReady() {
+        if (getBiometricClient() != null && getTemplateLoader() != null) {
+            this.btnStart.doClick(); // ✅ safe call
+        } else {
+            System.err.println("❌ Cannot auto-start. Dependencies not set.");
+        }
     }
 
 
@@ -148,26 +154,25 @@ public final class EnrollPanel
         return resultsPanel;
     }
 
-    private void startEnrolling() {
+    public void startEnrolling() {
         try {
-            if (isBusy()) {
+            if (isBusy()) return;
+
+            if (getBiometricClient() == null || getTemplateLoader() == null) {
+                System.err.println("❌ Cannot start enrollment: BiometricClient or TemplateLoader is null.");
                 return;
             }
-            setStatus("Preparing...", Color.BLACK, (Icon) null);
-            appendStatus(String.format("Enrolling from: %s\r\n", new Object[]{getTemplateLoader()}));
-            this.progressBar.setValue(0);
 
+            System.out.println("Preparing enrollment...");
+            System.out.printf("Enrolling from: %s%n", getTemplateLoader());
 
+            // ✅ This line caused the NPE
             getBiometricClient().getCount();
 
             int templateCount = getTemplateCount();
-            this.progressBar.setMaximum(templateCount);
-            this.txtTemplatesCount.setText(String.valueOf(templateCount));
+            System.out.printf("Templates to enroll: %d%n", templateCount);
 
-            this.lblStatusIcon.setIcon(null);
-            this.txtTimeElapsed.setText("N/A");
-
-            this.enrollmentTaskSender.setBunchSize(((Integer) this.spinnerBunchSize.getValue()).intValue());
+            this.enrollmentTaskSender.setBunchSize((Integer) this.spinnerBunchSize.getValue());
             this.enrollmentTaskSender.setBiometricClient(getBiometricClient());
             this.enrollmentTaskSender.setTemplateLoader(getTemplateLoader());
 
@@ -175,50 +180,75 @@ public final class EnrollPanel
             this.enrollmentTaskSender.start();
             enableControls(false);
         } catch (Exception e) {
-            MessageUtils.showError(this, e);
-            setStatus("Enrollment failed due to: " + e.toString(), Color.RED.darker(), this.iconError);
+            System.err.println("Enrollment failed due to: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     private void enrollPanelLoaded() {
-        this.enrollmentTaskSender = new TaskSender(getBiometricClient(), getTemplateLoader(), NBiometricOperation.ENROLL);
-        this.taskListener = new TaskListener() {
-            public void taskFinished() {
-                EnrollPanel.this.taskSenderFinished();
+        try {
+            if (getBiometricClient() == null || getTemplateLoader() == null) {
+                System.err.println("❌ BiometricClient or TemplateLoader is null — skipping enrollment initialization.");
+                return;
             }
 
-            public void taskErrorOccurred(Exception e) {
-                EnrollPanel.this.taskSenderExceptionOccured(e);
-            }
+            this.enrollmentTaskSender = new TaskSender(getBiometricClient(), getTemplateLoader(), NBiometricOperation.ENROLL);
 
-            public void taskProgressChanged(int completed) {
-                EnrollPanel.this.taskSenderProgressChanged(completed);
-            }
+            this.taskListener = new TaskListener() {
+                public void taskFinished() {
+                    EnrollPanel.this.taskSenderFinished();
+                }
 
+                public void taskErrorOccurred(Exception e) {
+                    EnrollPanel.this.taskSenderExceptionOccured(e);
+                }
 
-            public void matchingTaskCompleted(NBiometricTask task) {
-            }
-        };
-        this.enrollmentTaskSender.addTaskListener(this.taskListener);
+                public void taskProgressChanged(int completed) {
+                    EnrollPanel.this.taskSenderProgressChanged(completed);
+                }
 
-        this.lblProgress.setText("");
-        this.lblRemaining.setText("");
-        this.progressBar.setValue(0);
+                public void matchingTaskCompleted(NBiometricTask task) {
+                    // Not used in enroll
+                }
+            };
+
+            this.enrollmentTaskSender.addTaskListener(this.taskListener);
+
+            this.lblProgress.setText("");
+            this.lblRemaining.setText("");
+            this.progressBar.setValue(0);
+
+            // Automatically start enrollment if ready
+            startEnrolling();
+
+        } catch (Exception e) {
+            System.err.println("❌ Failed to initialize EnrollPanel: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
+
     private void taskSenderProgressChanged(int numberOfTasksCompleted) {
-        int currentProgress = this.progressBar.getValue();
-        int progressValue = (numberOfTasksCompleted < this.progressBar.getMaximum()) ? numberOfTasksCompleted : this.progressBar.getMaximum();
-        for (int i = currentProgress; i <= progressValue; i++) {
-            this.progressBar.setValue(i);
+        int maxProgress = this.progressBar.getMaximum(); // You can remove this line if you hardcode max
+        int progressValue = Math.min(numberOfTasksCompleted, maxProgress);
+
+        // Simulate progress update in console
+        System.out.printf("Progress: %d / %d%n", progressValue, maxProgress);
+
+        // Time calculations
+        long elapsed = System.currentTimeMillis() - this.startTime;
+        System.out.printf("Elapsed Time: %.2f s%n", elapsed / 1000.0);
+
+        // Estimate remaining time
+        long remaining;
+        if (numberOfTasksCompleted > 0) {
+            remaining = elapsed / numberOfTasksCompleted * (maxProgress - numberOfTasksCompleted);
+        } else {
+            remaining = 0L;
         }
 
-        long elapsed = System.currentTimeMillis() - this.startTime;
-        this.lblProgress.setText(String.format("%s / %s", new Object[]{Integer.valueOf(numberOfTasksCompleted), this.txtTemplatesCount.getText()}));
-        this.txtTimeElapsed.setText(String.format("%.2f s", new Object[]{Double.valueOf((elapsed / 1000L))}));
-
-        long remaining = elapsed / numberOfTasksCompleted * (this.progressBar.getMaximum() - numberOfTasksCompleted);
-        if (remaining / 1000L < 0L) {
+        if (remaining < 0) {
             remaining = 0L;
         }
 
@@ -226,7 +256,8 @@ public final class EnrollPanel
         long hr = TimeUnit.MILLISECONDS.toHours(remaining - TimeUnit.DAYS.toMillis(days));
         long min = TimeUnit.MILLISECONDS.toMinutes(remaining - TimeUnit.DAYS.toMillis(days) - TimeUnit.HOURS.toMillis(hr));
         long sec = TimeUnit.MILLISECONDS.toSeconds(remaining - TimeUnit.DAYS.toMillis(days) - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min));
-        this.lblRemaining.setText(String.format("Estimated time remaining: %02d.%02d:%02d:%02d", new Object[]{Long.valueOf(days), Long.valueOf(hr), Long.valueOf(min), Long.valueOf(sec)}));
+
+        System.out.printf("Estimated time remaining: %02d.%02d:%02d:%02d%n", days, hr, min, sec);
     }
 
     private void taskSenderExceptionOccured(Exception e) {
@@ -234,28 +265,28 @@ public final class EnrollPanel
     }
 
     private void taskSenderFinished() {
-        enableControls(true);
+        // You may still want to enable controls if relevant, or remove this
+         enableControls(true); // remove if only used in Swing
+
         long elapsed = this.enrollmentTaskSender.getElapsedTime();
 
         long hr = TimeUnit.MILLISECONDS.toHours(elapsed);
         long min = TimeUnit.MILLISECONDS.toMinutes(elapsed - TimeUnit.HOURS.toMillis(hr));
         long sec = TimeUnit.MILLISECONDS.toSeconds(elapsed - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min));
-        this.txtTimeElapsed.setText(String.format("%02d:%02d:%02d", new Object[]{Long.valueOf(hr), Long.valueOf(min), Long.valueOf(sec)}));
-        this.lblRemaining.setText("");
-        this.lblProgress.setText("");
+
+        System.out.printf("Total Time Elapsed: %02d:%02d:%02d%n", hr, min, sec);
+
         if (this.enrollmentTaskSender.isSuccessful()) {
-            appendStatus("\r\nEnrollment successful", this.txtStatus.getForeground());
-            this.lblStatusIcon.setIcon(this.iconOk);
+            System.out.println("✔ Enrollment successful");
         } else if (this.enrollmentTaskSender.isCanceled()) {
-            appendStatus("\r\nEnrollment canceled", Color.RED.darker());
-            this.lblStatusIcon.setIcon(this.iconError);
-            this.btnStart.setEnabled(true);
-            this.progressBar.setValue(0);
+            System.out.println("⚠ Enrollment canceled");
+            // Reset progress bar equivalent if needed
+            System.out.println("Progress reset to 0%");
         } else {
-            appendStatus("\r\nEnrollment finished with errors", this.txtStatus.getForeground());
-            this.lblStatusIcon.setIcon(this.iconError);
+            System.out.println("✖ Enrollment finished with errors");
         }
     }
+
 
     private void enableControls(boolean isIdle) {
         this.btnStart.setEnabled(isIdle);
@@ -266,21 +297,32 @@ public final class EnrollPanel
         }
     }
 
+//    private void setStatus(String msg, Color color, Icon icon) {
+//        this.txtStatus.setForeground(color);
+//        this.txtStatus.setText(msg);
+//        this.lblStatusIcon.setIcon(icon);
+//    }
+//
+//    private void appendStatus(String msg) {
+//        appendStatus(msg, Color.BLACK);
+//    }
+//
+//    private void appendStatus(String msg, Color color) {
+//        this.txtStatus.setText(this.txtStatus.getText() + msg);
+//        this.txtStatus.setForeground(color);
+//    }
+
     private void setStatus(String msg, Color color, Icon icon) {
-        this.txtStatus.setForeground(color);
-        this.txtStatus.setText(msg);
-        this.lblStatusIcon.setIcon(icon);
+        System.out.println("[STATUS] " + msg);
     }
 
     private void appendStatus(String msg) {
-        appendStatus(msg, Color.BLACK);
+        System.out.println("[LOG] " + msg);
     }
 
     private void appendStatus(String msg, Color color) {
-        this.txtStatus.setText(this.txtStatus.getText() + msg);
-        this.txtStatus.setForeground(color);
+        System.out.println("[LOG] " + msg);
     }
-
 
     public String getTitle() {
         return "Enroll Templates";
@@ -316,9 +358,3 @@ public final class EnrollPanel
         }
     }
 }
-
-
-/* Location:              D:\NeuroTechnology\AFISServerNative.jar!\com\neurotec\samples\server\controls\EnrollPanel.class
- * Java compiler version: 8 (52.0)
- * JD-Core Version:       1.1.3
- */

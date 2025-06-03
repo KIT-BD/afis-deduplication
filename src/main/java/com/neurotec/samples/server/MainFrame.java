@@ -64,6 +64,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private JLabel lblTable;
     private JLabel lblTableValue;
     private BasePanel activePanel;
+    private EnrollPanel enrollPanel;
 
     public MainFrame() {
         setType(Type.UTILITY);
@@ -184,13 +185,14 @@ public final class MainFrame extends JFrame implements ActionListener {
     }
 
     private void initializeTaskPanels() {
+        this.enrollPanel = new EnrollPanel(this);
         DeduplicationPanel deduplicationPanel = new DeduplicationPanel(this);
+
         this.panels.add(deduplicationPanel);
         this.panelCardLayoutContainer.add((Component) deduplicationPanel, Task.DEDUPLICATION.name());
 
-        EnrollPanel enrollPanel = new EnrollPanel(this);
-        this.panels.add(enrollPanel);
-        this.panelCardLayoutContainer.add((Component) enrollPanel, Task.ENROLL.name());
+        this.panels.add(this.enrollPanel);
+        this.panelCardLayoutContainer.add(this.enrollPanel, Task.ENROLL.name());
 
         TestSpeedPanel testSpeedPanel = new TestSpeedPanel(this);
         this.panels.add(testSpeedPanel);
@@ -299,9 +301,23 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         updateConnectionInformation();
 
+//        if (isLoadingTime) {
+//            setVisible(true);
+//            showPanel(Task.DEDUPLICATION, false);
+//        }
         if (isLoadingTime) {
             setVisible(true);
-            showPanel(Task.DEDUPLICATION, false);
+
+            // Manually set dependencies
+            this.enrollPanel.setBiometricClient(this.biometricClient);
+            this.enrollPanel.setTemplateLoader(this.templateLoader);
+
+            // Show and configure the Enroll panel
+            showPanel(Task.ENROLL, false);
+//            showPanel(Task.DEDUPLICATION, true);
+
+            // ✅ Now trigger the .doClick() safely
+            this.enrollPanel.triggerAutoStartIfReady();
         }
     }
 

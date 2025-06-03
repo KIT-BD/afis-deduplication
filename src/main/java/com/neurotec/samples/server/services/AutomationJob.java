@@ -1,20 +1,18 @@
 package com.neurotec.samples.server.services;
 
 import com.neurotec.samples.server.MainFrame;
-import com.neurotec.samples.server.controls.BasePanel;
 import com.neurotec.samples.server.util.MessageUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class DeduplicationJob implements Job {
+public class AutomationJob implements Job {
 
-    private static final Logger log = LogManager.getLogger(DeduplicationJob.class);
+    private static final Logger log = LogManager.getLogger(AutomationJob.class);
 
     @Override
     public void execute(JobExecutionContext context) {
@@ -30,7 +28,7 @@ public class DeduplicationJob implements Job {
                 frame.setTitle("Server Sample - Scheduled");
                 frame.setLocationRelativeTo(null);
                 frame.showMainFrame();
-                System.out.println("Deduplication started at:" + new java.util.Date());
+                System.out.println("Automated Enrollment -> Deduplication process initialized:" + new java.util.Date());
             } catch (Exception e) {
                 e.printStackTrace();
                 MessageUtils.showError(null, e);

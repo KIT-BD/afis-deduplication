@@ -1,8 +1,7 @@
 package com.kit.biometric;
 
 import com.neurotec.licensing.NLicense;
-import com.neurotec.samples.server.MainFrame;
-import com.neurotec.samples.server.services.DeduplicationJob;
+import com.neurotec.samples.server.services.AutomationJob;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.LibraryManager;
@@ -12,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
-import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Collection;
 import javax.swing.SwingUtilities;
@@ -23,8 +21,8 @@ public final class AFISServer {
     private static final Logger log = LogManager.getLogger(AFISServer.class);
 
     public static void main(String[] args) throws SchedulerException, InterruptedException {
-        Utils.setupLookAndFeel();
-        System.out.println(System.getProperty("user.home"));
+//        Utils.setupLookAndFeel();
+//        System.out.println(System.getProperty("user.home"));
 
         PropertyLoader.fileName = args[0];
 
@@ -55,18 +53,6 @@ public final class AFISServer {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 try {
-//                    MainFrame frame = new MainFrame();
-//                    Dimension d = new Dimension(935, 450);
-//                    frame.setSize(d);
-//                    frame.setMinimumSize(d);
-//                    frame.setPreferredSize(d);
-//
-//                    frame.setResizable(true);
-//                    frame.setDefaultCloseOperation(2);
-//                    frame.setTitle("Server Sample");
-//                    frame.setLocationRelativeTo(null);
-//                    frame.showMainFrame();
-//                    Thread.sleep(24 * 60 * 60 * 1000L);
                     scheduledJob();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -77,7 +63,7 @@ public final class AFISServer {
     }
 
     private static void scheduledJob() throws SchedulerException {
-        JobDetail job = JobBuilder.newJob(DeduplicationJob.class)
+        JobDetail job = JobBuilder.newJob(AutomationJob.class)
                 .withIdentity("guiJob", "group1")
                 .build();
 
@@ -93,7 +79,7 @@ public final class AFISServer {
 
         scheduler.triggerJob(job.getKey());
 
-        System.out.println("\nScheduled Deduplication to run daily at midnight and once on startup.");
+        System.out.println("\nScheduled Automation task to run daily at midnight and once on startup.");
     }
 
 }
