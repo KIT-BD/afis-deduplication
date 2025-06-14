@@ -7,11 +7,13 @@ import com.neurotec.biometrics.NSubject;
 import com.neurotec.biometrics.client.NBiometricClient;
 import com.neurotec.samples.server.connection.TemplateLoader;
 import com.neurotec.samples.server.controls.LongTaskDialog;
+import com.neurotec.samples.server.enums.Task;
 import com.neurotec.samples.server.settings.Settings;
 import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.util.concurrent.CompletionHandler;
 
 import java.awt.Frame;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -124,7 +126,7 @@ public final class TaskSender {
         this.biometricClient = biometricClient;
     }
 
-    public void start() throws IllegalAccessException {
+    public void start(Task task) throws IllegalAccessException {
         if (isBusy()) {
             throw new IllegalAccessException("Already started");
         }

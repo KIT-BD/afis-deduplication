@@ -12,6 +12,7 @@ import com.neurotec.biometrics.NSubject;
 import com.neurotec.io.NBuffer;
 import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
+import com.neurotec.samples.server.enums.Task;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
@@ -506,7 +507,7 @@ public final class DeduplicationPanel
         System.out.flush();
     }
 
-    private void startDeduplication() {
+    public void startDeduplication() {
         try {
             if (isBusy()) {
                 MessageUtils.showInformation(this, "Previous process is not completed yet.");
@@ -544,7 +545,7 @@ public final class DeduplicationPanel
                 this.lblProgress.setText(String.format("0 / %s", templateCount));
                 
                 // Store the starting index for later use
-                this.startIndex = 300;
+                this.startIndex = 2425;
                 if (this.startIndex >= templateCount) {
                     MessageUtils.showInformation(this, "Starting index " + this.startIndex + " is greater than or equal to the total template count of " + templateCount + ".");
                     setStatus("Starting index " + this.startIndex + " is greater than or equal to the total template count.", Color.RED.darker(), this.iconError);
@@ -567,7 +568,7 @@ public final class DeduplicationPanel
             this.deduplicationTaskSender.setTemplateLoader(getTemplateLoader());
 
             this.startTime = System.currentTimeMillis();
-            this.deduplicationTaskSender.start();
+            this.deduplicationTaskSender.start(Task.DEDUPLICATION);
             enableControls(false);
             
             // Minimize to tray when task starts
@@ -575,10 +576,10 @@ public final class DeduplicationPanel
                 ownerFrame.setVisible(false);
             }
         } catch (Exception e) {
-            e.fillInStackTrace();
-            MessageUtils.showError(this, e);
-            setStatus("Deduplication failed due to: " + e.toString(), Color.RED.darker(), this.iconError);
-            log.error("Deduplication failed due to: {}", e.getMessage());
+//            e.fillInStackTrace();
+//            MessageUtils.showError(this, e);
+//            setStatus("Deduplication failed due to: " + e.toString(), Color.RED.darker(), this.iconError);
+//            log.error("Deduplication failed due to: {}", e.getMessage());
         }
     }
 
@@ -607,8 +608,8 @@ public final class DeduplicationPanel
 
             startDeduplication();
         } catch (Exception e) {
-            e.fillInStackTrace();
-            MessageUtils.showError(this, e);
+//            e.fillInStackTrace();
+//            MessageUtils.showError(this, e);
         }
     }
 

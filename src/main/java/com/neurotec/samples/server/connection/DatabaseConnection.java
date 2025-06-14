@@ -169,9 +169,11 @@ public class DatabaseConnection implements TemplateLoader {
         connect();
         this.statResultSet = this.connection.createStatement();
         if (!this.hasMultipleColumns) {
-            this.resultSet = this.statResultSet.executeQuery(String.format("SELECT %s, %s FROM %s", new Object[]{
-                    this.idColumn, this.templateColumn, this.table
-            }));
+//            this.resultSet = this.statResultSet.executeQuery(String.format("SELECT %s, %s FROM %s", new Object[]{
+//                    this.idColumn, this.templateColumn, this.table
+//            }));
+            this.resultSet = this.statResultSet.executeQuery(String.format(
+                    "SELECT Id, %s, %s FROM %s", this.idColumn, this.templateColumn, this.table));
         } else {
             this.resultSet = this.statResultSet.executeQuery(String.format("SELECT %s, %s ,%s , %s ,%s ,%s , %s , %s , %s , %s , %s FROM %s", new Object[]{
                     this.idColumn,
@@ -179,6 +181,12 @@ public class DatabaseConnection implements TemplateLoader {
                     this.table
             }));
         }
+    }
+
+    public final int getMaxId() throws SQLException {
+        Statement stat = this.connection.createStatement();
+        ResultSet result = stat.executeQuery(String.format("SELECT max(Id) FROM %s", this.table));
+        return result.findColumn("Id");
     }
 
     public final synchronized void endLoad() throws SQLException {
@@ -207,7 +215,8 @@ public class DatabaseConnection implements TemplateLoader {
             byte[] tmplData = null;
             FMRecord fmRecord = null;
 
-            String id = this.resultSet.getString(this.idColumn);
+            String subjectId = this.resultSet.getString(this.idColumn);
+            int dbId = this.resultSet.getInt("Id");
 
             if (this.hasMultipleColumns) {
 
@@ -239,13 +248,13 @@ public class DatabaseConnection implements TemplateLoader {
 
 
                 tmpSubject.setTemplate(tmpTemplate);
-                tmpSubject.setId(id);
+                tmpSubject.setId(subjectId);
             } else {
 
                 tmplData = readTemplateData(this.resultSet, this.templateColumn, this.isBase64Encoded);
 
                 tmpSubject.setTemplateBuffer(new NBuffer(tmplData));
-                tmpSubject.setId(id);
+                tmpSubject.setId(subjectId);
             }
 
             results.add(tmpSubject);
@@ -340,9 +349,3 @@ public class DatabaseConnection implements TemplateLoader {
         return tmplData;
     }
 }
-
-
-/* Location:              D:\NeuroTechnology\AFISServerNative.jar!\com\neurotec\samples\server\connection\DatabaseConnection.class
- * Java compiler version: 8 (52.0)
- * JD-Core Version:       1.1.3
- */

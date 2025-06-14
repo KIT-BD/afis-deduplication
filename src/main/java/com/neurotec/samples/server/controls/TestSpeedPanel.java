@@ -4,6 +4,7 @@ import com.neurotec.biometrics.NBiometricOperation;
 import com.neurotec.biometrics.NBiometricTask;
 import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
+import com.neurotec.samples.server.enums.Task;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.util.Utils;
@@ -191,7 +192,7 @@ public final class TestSpeedPanel
             this.taskSender.setSendOneBunchOnly(true);
             this.taskSender.setTemplateLoader(getTemplateLoader());
             this.taskSender.setBiometricClient(getBiometricClient());
-            this.taskSender.start();
+            this.taskSender.start(Task.SPEED_TEST);
         } catch (Exception e) {
             MessageUtils.showError(this, e);
             setStatus("Testing speed failed due to: " + e.toString(), Color.RED.darker(), this.iconError);

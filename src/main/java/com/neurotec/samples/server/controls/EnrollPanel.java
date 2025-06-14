@@ -2,8 +2,10 @@ package com.neurotec.samples.server.controls;
 
 import com.neurotec.biometrics.NBiometricOperation;
 import com.neurotec.biometrics.NBiometricTask;
+import com.neurotec.samples.server.EnrollmentCompleteListener;
 import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
+import com.neurotec.samples.server.enums.Task;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.util.Utils;
@@ -35,6 +37,7 @@ public final class EnrollPanel
         extends BasePanel {
     private static final long serialVersionUID = 1L;
     private TaskSender enrollmentTaskSender;
+    private EnrollmentCompleteListener enrollmentCompleteListener;
     private long startTime;
     private GridBagUtils gridBagUtils;
     private TaskListener taskListener;
@@ -68,6 +71,9 @@ public final class EnrollPanel
         });
     }
 
+    public void setEnrollmentCompleteListener(EnrollmentCompleteListener listener) {
+        this.enrollmentCompleteListener = listener;
+    }
 
     private void initializeComponents() {
         this.gridBagUtils = new GridBagUtils(1, new Insets(3, 3, 3, 3));
@@ -177,11 +183,11 @@ public final class EnrollPanel
             this.enrollmentTaskSender.setTemplateLoader(getTemplateLoader());
 
             this.startTime = System.currentTimeMillis();
-            this.enrollmentTaskSender.start();
+            this.enrollmentTaskSender.start(Task.ENROLL);
             enableControls(false);
         } catch (Exception e) {
-            System.err.println("Enrollment failed due to: " + e.getMessage());
-            e.printStackTrace();
+//            System.err.println("Enrollment failed due to: " + e.getMessage());
+//            e.printStackTrace();
         }
     }
 
@@ -278,6 +284,7 @@ public final class EnrollPanel
 
         if (this.enrollmentTaskSender.isSuccessful()) {
             System.out.println("✔ Enrollment successful");
+            this.enrollmentCompleteListener.onEnrollmentComplete();
         } else if (this.enrollmentTaskSender.isCanceled()) {
             System.out.println("⚠ Enrollment canceled");
             // Reset progress bar equivalent if needed

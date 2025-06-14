@@ -25,16 +25,10 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.Border;
 
-public final class MainFrame extends JFrame implements ActionListener {
+public final class MainFrame extends JFrame implements ActionListener, EnrollmentCompleteListener {
     private static final long serialVersionUID = 1L;
     private static final String SAMPLE_TITLE = "Server Sample";
     private static final Color SELECTED_BUTTON_COLOR = Color.DARK_GRAY;
@@ -193,6 +187,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         this.panels.add(this.enrollPanel);
         this.panelCardLayoutContainer.add(this.enrollPanel, Task.ENROLL.name());
+        this.enrollPanel.setEnrollmentCompleteListener(this);
 
         TestSpeedPanel testSpeedPanel = new TestSpeedPanel(this);
         this.panels.add(testSpeedPanel);
@@ -366,5 +361,17 @@ public final class MainFrame extends JFrame implements ActionListener {
         } else if (source == this.btnMatchingSettings) {
             showPanel(Task.SETTINGS, false);
         }
+    }
+
+    @Override
+    public void onEnrollmentComplete() {
+        SwingUtilities.invokeLater(() -> {
+            showPanel(Task.DEDUPLICATION, true);
+            BasePanel panel = this.panels.get(Task.DEDUPLICATION.value());
+            if (panel instanceof DeduplicationPanel) {
+                DeduplicationPanel dedupPanel = (DeduplicationPanel) panel;
+                dedupPanel.startDeduplication();
+            }
+        });
     }
 }

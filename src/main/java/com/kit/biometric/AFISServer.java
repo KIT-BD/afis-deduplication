@@ -5,18 +5,17 @@ import com.neurotec.samples.server.services.AutomationJob;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.LibraryManager;
-import com.neurotec.samples.util.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
+import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.Collection;
-import javax.swing.SwingUtilities;
-
 
 public final class AFISServer {
+
     static Collection<String> licenses = null;
     private static final Logger log = LogManager.getLogger(AFISServer.class);
 
@@ -28,20 +27,15 @@ public final class AFISServer {
 
         LibraryManager.initLibraryPath();
         licenses = new ArrayList<>();
-
         licenses.add("Biometrics.FingerClient");
 
         try {
             if (!NLicense.obtain("/local", 5000, "FingerExtractor")) {
                 System.err.format("Could not obtain license: %s%n", new Object[]{"FingerExtractor"});
             }
-
-
             if (!NLicense.obtain("/local", 5000, "FingerClient")) {
                 System.err.format("Could not obtain license: %s%n", new Object[]{"FingerClient"});
             }
-
-
             if (!NLicense.obtain("/local", 5000, "FingerMatcher")) {
                 System.err.format("Could not obtain license: %s%n", new Object[]{"FingerMatcher"});
             }
@@ -74,12 +68,9 @@ public final class AFISServer {
 
         Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
-
         scheduler.scheduleJob(job, trigger);
-
         scheduler.triggerJob(job.getKey());
 
         System.out.println("\nScheduled Automation task to run daily at midnight and once on startup.");
     }
-
 }
