@@ -1,5 +1,42 @@
 package com.neurotec.samples.server.controls;
 
+import java.awt.AWTException;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Frame;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
+import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.neurotec.biometrics.NBiometricOperation;
 import com.neurotec.biometrics.NBiometricTask;
 import com.neurotec.biometrics.NEMatchingDetails;
@@ -13,46 +50,11 @@ import com.neurotec.io.NBuffer;
 import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
 import com.neurotec.samples.server.enums.Task;
+import com.neurotec.samples.server.process.NServerManager;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.Utils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Frame;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.SystemTray;
-import java.awt.TrayIcon;
-import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.AWTException;
-import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
-import javax.swing.ImageIcon;
-import javax.swing.SwingUtilities;
 
 public final class DeduplicationPanel
         extends BasePanel {
@@ -63,6 +65,7 @@ public final class DeduplicationPanel
     private TaskSender deduplicationTaskSender;
     private long startTime;
     private String resultsFilePath = propertyLoader.getResultDirectory() == null ? "result.csv" : propertyLoader.getResultDirectory();
+    private final NServerManager nServerManager;
 
     private GridBagUtils gridBagUtils;
 
@@ -92,9 +95,10 @@ public final class DeduplicationPanel
     private int startIndex;
     private boolean processCompleted = false;
 
-    public DeduplicationPanel(Frame owner) {
+    public DeduplicationPanel(Frame owner, NServerManager nServerManager) {
         super(owner);
         this.ownerFrame = owner;
+        this.nServerManager = nServerManager;
         initializeComponents();
         this.openFileDialog = new JFileChooser(this.resultsFilePath);
         addAncestorListener(new AncestorListener() {
@@ -390,23 +394,22 @@ public final class DeduplicationPanel
     }
 
     private void taskSenderFinished() {
+        appendStatus(String.format("%n%nCOMPLETED%nTotal time taken: %s", new Object[]{getTotalTime()}), Color.BLACK);
         enableControls(true);
-        this.lblRemaining.setText("");
-        if (this.deduplicationTaskSender.isSuccessful() && !this.deduplicationTaskSender.isCanceled()) {
-            appendStatus("Deduplication completed without errors", Color.BLACK);
-            this.lblStatusIcon.setIcon(this.iconOk);
-            System.out.println(
-                     "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
-                       "~~~~~~~~~~~~~ Deduplication Completed ~~~~~~~~~~~~\n"+
-                       "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-        } else {
-            appendStatus(this.deduplicationTaskSender.isCanceled() ? "Deduplication canceled." : "There were errors during deduplication", Color.RED.darker());
-            this.btnStart.setEnabled(true);
-            this.lblStatusIcon.setIcon(this.iconError);
-            this.progressBar.setValue(0);
-        }
-        // Don't exit automatically, let user decide from tray menu
-//         System.exit(0);
+        this.progressBar.setValue(this.progressBar.getMaximum());
+        this.processCompleted = true;
+        log.info("Deduplication finished. Stopping NServer...");
+        this.nServerManager.stopNServer();
+        log.info("Exiting application.");
+        System.exit(0);
+    }
+
+    private String getTotalTime() {
+        long totalTime = System.currentTimeMillis() - this.startTime;
+        long hours = TimeUnit.MILLISECONDS.toHours(totalTime);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(totalTime) % 60L;
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(totalTime) % 60L;
+        return String.format("%d hours, %d minutes, %d seconds", new Object[]{Long.valueOf(hours), Long.valueOf(minutes), Long.valueOf(seconds)});
     }
 
     private void taskSenderProgressChanged(int numberOfTasksCompleted) {
@@ -452,24 +455,16 @@ public final class DeduplicationPanel
         // Ensure we don't exceed the maximum template count
         if (actualProgress > this.progressBar.getMaximum()) {
             actualProgress = this.progressBar.getMaximum();
-            // If we've reached the maximum, cancel the task to prevent further processing
+        }
+
+        if (actualProgress >= this.progressBar.getMaximum() && !processCompleted) {
+            processCompleted = true;
             if (this.deduplicationTaskSender != null && this.deduplicationTaskSender.isBusy()) {
                 System.out.println("\nReached maximum template count of " + this.progressBar.getMaximum() + ". Completing deduplication process.");
                 this.deduplicationTaskSender.cancel();
-                
-                // Set the process as completed to prevent further progress updates
-                processCompleted = true;
-                
-                // Manually trigger task completion to ensure the process finishes properly
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        taskSenderFinished();
-                    }
-                });
             }
         }
-        
+
         this.progressBar.setValue(actualProgress);
         
         this.lblProgress.setText(String.format("%s / %s", new Object[]{
@@ -478,15 +473,16 @@ public final class DeduplicationPanel
         }));
         
         // Show progress bar in console
-        showProgress(actualProgress, this.progressBar.getMaximum(), eta);
+        showProgress(actualProgress, this.progressBar.getMaximum(), this.startIndex, eta);
         
         // Add detailed progress logging for each template
-        System.out.println("\nProgress: " + numberOfTasksCompleted + " templates processed since index " + this.startIndex + 
-                          " (Template " + actualProgress + " of " + this.progressBar.getMaximum() + 
-                          ", " + String.format("%.2f", (actualProgress * 100.0 / this.progressBar.getMaximum())) + "%)");
+        double percentage = ((double) (actualProgress - this.startIndex) / (this.progressBar.getMaximum() - this.startIndex)) * 100;
+        System.out.println("\nProgress: " + numberOfTasksCompleted + " templates processed since index " + this.startIndex +
+                          " (Template " + actualProgress + " of " + this.progressBar.getMaximum() +
+                          ", " + String.format("%.2f", percentage) + "%)");
     }
 
-    private void showProgress(int completed, int total, String eta) {
+    private void showProgress(int completed, int total, int startIndex, String eta) {
         int barLength = 50;
         int progress = (int) (((double) completed / total) * barLength);
         StringBuilder bar = new StringBuilder("[");
@@ -502,85 +498,102 @@ public final class DeduplicationPanel
         }
         bar.append("]");
 
-        int percent = (int) (((double) completed / total) * 100);
-        System.out.print("\r" + bar + String.format(" %3d%% (%d / %d)   %s", percent, completed, total, eta));
+        double percentage = 0;
+        if (total > startIndex) {
+            percentage = ((double) (completed - startIndex) / (total - startIndex)) * 100.0;
+        } else if (completed >= total) {
+            percentage = 100.0;
+        }
+
+        if (percentage > 100) {
+            percentage = 100;
+        }
+
+        System.out.print("\r" + bar + String.format(" %.2f%% (%d / %d)   %s", percentage, completed, total, eta));
         System.out.flush();
     }
 
     public void startDeduplication() {
-        try {
-            if (isBusy()) {
-                MessageUtils.showInformation(this, "Previous process is not completed yet.");
-                return;
-            }
-            setStatus("Preparing ...", Color.BLACK, (Icon) null);
-            this.lblProgress.setText("");
-            this.lblRemaining.setText("");
-            System.out.println(
-                    "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
-                      "~~~~~~~~~~~~~ Deduplication started ~~~~~~~~~~~~~~\n"+
-                      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-
-            getBiometricClient().getCount();
-
-            this.resultsFilePath = this.txtResultFilePath.getText().trim();
-            if (this.resultsFilePath == null || this.resultsFilePath.isEmpty()) {
-                this.resultsFilePath = propertyLoader.getResultDirectory() == null ? "result.csv" : propertyLoader.getResultDirectory();
-                this.txtResultFilePath.setText(this.resultsFilePath);
-            }
-            writeLogHeader();
-
-            this.progressBar.setValue(0);
-            this.processCompleted = false;
-            try {
-                int templateCount = getTemplateCount();
-                if (templateCount <= 0) {
-                    MessageUtils.showInformation(this, "No templates found or error retrieving template count. Please check connection settings and permissions.");
-                    setStatus("No templates found or error retrieving template count.", Color.RED.darker(), this.iconError);
-                    return;
-                }
-                
-                // Set the progress bar maximum to the total template count
-                this.progressBar.setMaximum(templateCount);
-                this.lblProgress.setText(String.format("0 / %s", templateCount));
-                
-                // Store the starting index for later use
-                this.startIndex = 2425;
-                if (this.startIndex >= templateCount) {
-                    MessageUtils.showInformation(this, "Starting index " + this.startIndex + " is greater than or equal to the total template count of " + templateCount + ".");
-                    setStatus("Starting index " + this.startIndex + " is greater than or equal to the total template count.", Color.RED.darker(), this.iconError);
-                    return;
-                }
-                
-                System.out.println("Starting from index " + this.startIndex + ", processing templates " + this.startIndex + " to " + (templateCount - 1) + " out of " + templateCount + " total templates");
-
-            } catch (Exception e) {
-                System.err.println("Error getting template count: " + e.getMessage());
-                e.fillInStackTrace();
-                MessageUtils.showError(this, "Error getting template count: " + e.getMessage());
-                setStatus("Error getting template count: " + e.getMessage(), Color.RED.darker(), this.iconError);
-                return;
-            }
-
-            getBiometricClient().setMatchingWithDetails(true);
-            this.deduplicationTaskSender.setBunchSize(350);
-            this.deduplicationTaskSender.setBiometricClient(getBiometricClient());
-            this.deduplicationTaskSender.setTemplateLoader(getTemplateLoader());
-
-            this.startTime = System.currentTimeMillis();
-            this.deduplicationTaskSender.start(Task.DEDUPLICATION);
-            enableControls(false);
-            
-            // Minimize to tray when task starts
-            if (ownerFrame != null) {
-                ownerFrame.setVisible(false);
-            }
-        } catch (Exception e) {
-//            e.fillInStackTrace();
-//            MessageUtils.showError(this, e);
-//            setStatus("Deduplication failed due to: " + e.toString(), Color.RED.darker(), this.iconError);
-//            log.error("Deduplication failed due to: {}", e.getMessage());
+        if (isBusy()) {
+            MessageUtils.showInformation(this, "Previous process is not completed yet.");
+            return;
         }
+        setStatus("Preparing ...", Color.BLACK, (Icon) null);
+        this.lblProgress.setText("");
+        this.lblRemaining.setText("");
+        enableControls(false);
+
+        SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
+            @Override
+            protected Integer doInBackground() throws Exception {
+                System.out.println(
+                        "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
+                                "~~~~~~~~~~~~~ Deduplication started ~~~~~~~~~~~~~~\n"+
+                                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
+                getBiometricClient().getCount();
+
+                resultsFilePath = txtResultFilePath.getText().trim();
+                if (resultsFilePath == null || resultsFilePath.isEmpty()) {
+                    resultsFilePath = propertyLoader.getResultDirectory() == null ? "result.csv" : propertyLoader.getResultDirectory();
+                }
+                writeLogHeader();
+
+                return getTemplateCount();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    int templateCount = get();
+                    if (templateCount <= 0) {
+                        MessageUtils.showInformation(DeduplicationPanel.this, "No templates found or error retrieving template count. Please check connection settings and permissions.");
+                        setStatus("No templates found or error retrieving template count.", Color.RED.darker(), iconError);
+                        enableControls(true);
+                        return;
+                    }
+
+                    final String path = resultsFilePath;
+                    SwingUtilities.invokeLater(() -> {
+                        txtResultFilePath.setText(path);
+                        progressBar.setValue(0);
+                        progressBar.setMaximum(templateCount);
+                        lblProgress.setText(String.format("0 / %s", templateCount));
+                    });
+
+                    processCompleted = false;
+
+                    startIndex = 0;
+                    if (startIndex >= templateCount) {
+                        MessageUtils.showInformation(DeduplicationPanel.this, "Starting index " + startIndex + " is greater than or equal to the total template count of " + templateCount + ".");
+                        setStatus("Starting index " + startIndex + " is greater than or equal to the total template count.", Color.RED.darker(), iconError);
+                        enableControls(true);
+                        return;
+                    }
+
+                    System.out.println("Starting from index " + startIndex + ", processing templates " + startIndex + " to " + (templateCount - 1) + " out of " + templateCount + " total templates");
+
+                    getBiometricClient().setMatchingWithDetails(true);
+                    deduplicationTaskSender.setBunchSize(350);
+                    deduplicationTaskSender.setBiometricClient(getBiometricClient());
+                    deduplicationTaskSender.setTemplateLoader(getTemplateLoader());
+
+                    startTime = System.currentTimeMillis();
+                    deduplicationTaskSender.start(Task.DEDUPLICATION);
+
+                    if (ownerFrame != null) {
+                        ownerFrame.setVisible(false);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    MessageUtils.showError(DeduplicationPanel.this, e);
+                    setStatus("Deduplication failed due to: " + e.toString(), Color.RED.darker(), iconError);
+                    log.error("Deduplication failed due to: {}", e.getMessage());
+                    enableControls(true);
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void deduplicationPanelLoaded() {

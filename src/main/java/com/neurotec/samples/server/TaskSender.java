@@ -190,6 +190,7 @@ public final class TaskSender {
 
             try {
                 while (!TaskSender.this.canceled) {
+                    if (TaskSender.this.canceled) break;
                     NSubject[] subjects = TaskSender.this.templateLoader.loadNext(TaskSender.this.bunchSize);
                     if (subjects == null || subjects.length == 0) {
                         break;
@@ -223,9 +224,11 @@ public final class TaskSender {
                         }
                         NBiometricTask task = TaskSender.this.biometricClient.createTask(EnumSet.of(TaskSender.this.operation), null);
                         for (NSubject subject : subjects) {
+                            if (TaskSender.this.canceled) break;
                             task.getSubjects().add(subject);
                             subject.dispose();
                         }
+                        if (TaskSender.this.canceled) break;
                         TaskSender.this.biometricClient.performTask(task, null, new TaskSender.TaskCompletionHandler());
                         task.dispose();
                         synchronized (TaskSender.this.lock) {
@@ -236,7 +239,7 @@ public final class TaskSender {
                         break;
                     }
                 }
-                while (TaskSender.this.tasksCompletedCount < TaskSender.this.tasksSentCount) {
+                while (TaskSender.this.tasksCompletedCount < TaskSender.this.tasksSentCount && !TaskSender.this.canceled) {
                     Thread.sleep(200L);
                 }
                 TaskSender.this.stopTime = System.currentTimeMillis();

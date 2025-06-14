@@ -1,5 +1,29 @@
 package com.neurotec.samples.server;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.border.Border;
+
 import com.neurotec.biometrics.client.NBiometricClient;
 import com.neurotec.biometrics.client.NClusterBiometricConnection;
 import com.neurotec.samples.server.connection.DatabaseConnection;
@@ -10,23 +34,13 @@ import com.neurotec.samples.server.controls.DeduplicationPanel;
 import com.neurotec.samples.server.controls.EnrollPanel;
 import com.neurotec.samples.server.controls.TestSpeedPanel;
 import com.neurotec.samples.server.enums.Task;
+import com.neurotec.samples.server.process.NServerManager;
 import com.neurotec.samples.server.settings.ConnectionSettingsDialog;
 import com.neurotec.samples.server.settings.MatchingSettingsPanel;
 import com.neurotec.samples.server.settings.Settings;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
 import com.neurotec.samples.util.Utils;
-
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import javax.swing.*;
-import javax.swing.border.Border;
 
 public final class MainFrame extends JFrame implements ActionListener, EnrollmentCompleteListener {
     private static final long serialVersionUID = 1L;
@@ -59,9 +73,11 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
     private JLabel lblTableValue;
     private BasePanel activePanel;
     private EnrollPanel enrollPanel;
+    private final NServerManager nServerManager;
 
     public MainFrame() {
         setType(Type.UTILITY);
+        this.nServerManager = new NServerManager();
         initializeComponents();
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -180,7 +196,7 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
 
     private void initializeTaskPanels() {
         this.enrollPanel = new EnrollPanel(this);
-        DeduplicationPanel deduplicationPanel = new DeduplicationPanel(this);
+        DeduplicationPanel deduplicationPanel = new DeduplicationPanel(this, this.nServerManager);
 
         this.panels.add(deduplicationPanel);
         this.panelCardLayoutContainer.add((Component) deduplicationPanel, Task.DEDUPLICATION.name());
@@ -237,6 +253,7 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
                 MessageUtils.showError(this, e);
             }
         }
+        nServerManager.stopNServer();
     }
 
     private void showPanel(Task task, boolean force) {
@@ -276,6 +293,8 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
         } else {
             setTitle(String.format("%s: %s", new Object[]{"Server Sample", title}));
         }
+
+        connectionSettingsChanged(false);
     }
 
     private void connectionSettingsChanged(boolean isLoadingTime) {
@@ -296,10 +315,6 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
 
         updateConnectionInformation();
 
-//        if (isLoadingTime) {
-//            setVisible(true);
-//            showPanel(Task.DEDUPLICATION, false);
-//        }
         if (isLoadingTime) {
             setVisible(true);
 
@@ -309,7 +324,6 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
 
             // Show and configure the Enroll panel
             showPanel(Task.ENROLL, false);
-//            showPanel(Task.DEDUPLICATION, true);
 
             // ✅ Now trigger the .doClick() safely
             this.enrollPanel.triggerAutoStartIfReady();
@@ -338,10 +352,19 @@ public final class MainFrame extends JFrame implements ActionListener, Enrollmen
     }
 
     public void showMainFrame() {
-        setMinimumSize(new Dimension(1, 1));
-        setLocation(-1000, -1000);
-        setVisible(true);
-        showConnectionSettings(true);
+        new Thread(() -> {
+            try {
+                nServerManager.startNServer();
+                Thread.sleep(20000L);
+                SwingUtilities.invokeLater(() -> {
+                    showConnectionSettings(true);
+                    updateConnectionInformation();
+                    setVisible(true);
+                });
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> MessageUtils.showError(MainFrame.this, e));
+            }
+        }).start();
     }
 
     public boolean isPanelBusy() {
