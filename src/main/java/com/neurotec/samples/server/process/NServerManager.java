@@ -6,8 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
@@ -46,11 +50,49 @@ public class NServerManager {
                 logger.info("Deleting original file: {}", sourcePath);
                 Files.delete(sourcePath);
                 logger.info("Successfully deleted {}", sourcePath);
+
+                cleanupOldBackups(fileName);
             } catch (IOException e) {
                 logger.error("Error during backup and delete for file: " + fileName, e);
             }
         } else {
             logger.warn("File {} not found for backup and deletion.", sourcePath);
+        }
+    }
+
+    private void cleanupOldBackups(String originalFileName) {
+        try {
+            Path dir = Paths.get(NSERVER_DIRECTORY);
+            String baseName = originalFileName.substring(0, originalFileName.lastIndexOf('.'));
+            String extension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+
+            List<Path> backups = Files.list(dir)
+                    .filter(p -> {
+                        String fName = p.getFileName().toString();
+                        return fName.startsWith(baseName + "_") && fName.endsWith(extension);
+                    })
+                    .sorted(Comparator.comparing(this::getFileCreationTime).reversed()) // Newest first
+                    .collect(Collectors.toList());
+
+            int maxBackups = 3;
+            if (backups.size() > maxBackups) {
+                List<Path> toDelete = backups.subList(maxBackups, backups.size());
+                for (Path oldBackup : toDelete) {
+                    Files.delete(oldBackup);
+                    logger.info("Deleted old backup: {}", oldBackup);
+                }
+            }
+        } catch (IOException e) {
+            logger.error("Failed to clean up old backups for " + originalFileName, e);
+        }
+    }
+
+    private FileTime getFileCreationTime(Path path) {
+        try {
+            return (FileTime) Files.getAttribute(path, "creationTime");
+        } catch (IOException e) {
+            logger.error("Could not get creation time for " + path, e);
+            return FileTime.fromMillis(0); // fallback
         }
     }
 

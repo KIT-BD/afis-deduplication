@@ -189,7 +189,6 @@ public final class DeduplicationPanel
 
         initializePropertiesPanel();
 
-        this.lblRemaining = new JLabel("Estimated time remaining:");
         this.lblProgress = new JLabel("progress label", 4);
         this.progressBar = new JProgressBar(0, 100);
         this.lblStatusIcon = new JLabel();
@@ -203,9 +202,7 @@ public final class DeduplicationPanel
         this.gridBagUtils.addToGridBagLayout(0, 0, this, this.btnStart);
         this.gridBagUtils.addToGridBagLayout(0, 1, this, this.btnCancel);
         this.gridBagUtils.addToGridBagLayout(1, 0, 2, 2, this, this.panelProperties);
-        this.gridBagUtils.addToGridBagLayout(0, 2, 3, 1, this, this.lblRemaining);
-        this.gridBagUtils.addToGridBagLayout(3, 2, 1, 1, 1, 0, this, new JLabel());
-        this.gridBagUtils.addToGridBagLayout(4, 2, 1, 1, 0, 0, this, this.lblProgress);
+        this.gridBagUtils.addToGridBagLayout(0, 2, 3, 1, this, this.lblProgress);
         this.gridBagUtils.addToGridBagLayout(0, 3, 5, 1, this, this.progressBar);
         this.gridBagUtils.addToGridBagLayout(0, 4, 1, 1, this, this.lblStatusIcon);
         this.gridBagUtils.addToGridBagLayout(0, 5, 1, 1, 0, 1, this, new JLabel());
@@ -420,34 +417,6 @@ public final class DeduplicationPanel
         if (numberOfTasksCompleted == 1) {
             setStatus("Matching templates ...\r\n", Color.BLACK, (Icon) null);
         }
-        String eta = "Estimated time remaining: 00:00:00:00";
-        if (numberOfTasksCompleted % 10 == 0) {
-            long remaining = (System.currentTimeMillis() - this.startTime) / numberOfTasksCompleted * (this.progressBar.getMaximum() - numberOfTasksCompleted);
-            if (remaining / 1000L < 0L) {
-                remaining = 0L;
-            }
-            long days = TimeUnit.MILLISECONDS.toDays(remaining);
-            long hr = TimeUnit.MILLISECONDS.toHours(remaining - TimeUnit.DAYS.toMillis(days));
-            long min = TimeUnit.MILLISECONDS.toMinutes(remaining - TimeUnit.DAYS.toMillis(days) - TimeUnit.HOURS.toMillis(hr));
-            long sec = TimeUnit.MILLISECONDS.toSeconds(remaining - TimeUnit.DAYS.toMillis(days) - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min));
-            this.lblRemaining.setText(
-                    String.format(
-                            "Estimated time remaining: %02d.%02d:%02d:%02d",
-                            new Object[]{
-                                    days,
-                                    hr,
-                                    min,
-                                    sec
-                            })
-            );
-            eta = String.format(
-                    "Estimated time remaining: %02d:%02d:%02d:%02d",
-                    days,
-                    hr,
-                    min,
-                    sec
-            );
-        }
         
         // Calculate the actual progress value (starting from startIndex)
         int actualProgress = this.startIndex + numberOfTasksCompleted;
@@ -473,7 +442,7 @@ public final class DeduplicationPanel
         }));
         
         // Show progress bar in console
-        showProgress(actualProgress, this.progressBar.getMaximum(), this.startIndex, eta);
+        showProgress(actualProgress, this.progressBar.getMaximum(), this.startIndex);
         
         // Add detailed progress logging for each template
         double percentage = ((double) (actualProgress - this.startIndex) / (this.progressBar.getMaximum() - this.startIndex)) * 100;
@@ -482,7 +451,7 @@ public final class DeduplicationPanel
                           ", " + String.format("%.2f", percentage) + "%)");
     }
 
-    private void showProgress(int completed, int total, int startIndex, String eta) {
+    private void showProgress(int completed, int total, int startIndex) {
         int barLength = 50;
         int progress = (int) (((double) completed / total) * barLength);
         StringBuilder bar = new StringBuilder("[");
@@ -509,7 +478,7 @@ public final class DeduplicationPanel
             percentage = 100;
         }
 
-        System.out.print("\r" + bar + String.format(" %.2f%% (%d / %d)   %s", percentage, completed, total, eta));
+        System.out.print("\r" + bar + String.format(" %.2f%% (%d / %d)", percentage, completed, total));
         System.out.flush();
     }
 
@@ -520,16 +489,15 @@ public final class DeduplicationPanel
         }
         setStatus("Preparing ...", Color.BLACK, (Icon) null);
         this.lblProgress.setText("");
-        this.lblRemaining.setText("");
         enableControls(false);
+        System.out.println(
+                "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"+
+                "\n~~~~~~~~~~~~~ Deduplication started ~~~~~~~~~~~~~~"+
+                "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
             @Override
             protected Integer doInBackground() throws Exception {
-                System.out.println(
-                        "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
-                                "~~~~~~~~~~~~~ Deduplication started ~~~~~~~~~~~~~~\n"+
-                                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
                 getBiometricClient().getCount();
 
@@ -617,12 +585,8 @@ public final class DeduplicationPanel
                 }
             });
             this.lblProgress.setText("");
-            this.lblRemaining.setText("");
-
-            startDeduplication();
         } catch (Exception e) {
-//            e.fillInStackTrace();
-//            MessageUtils.showError(this, e);
+            log.error("Error initializing deduplication panel", e);
         }
     }
 

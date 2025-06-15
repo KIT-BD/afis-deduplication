@@ -1,14 +1,5 @@
 package com.neurotec.samples.server.controls;
 
-import com.neurotec.biometrics.NBiometricOperation;
-import com.neurotec.biometrics.NBiometricTask;
-import com.neurotec.samples.server.TaskListener;
-import com.neurotec.samples.server.TaskSender;
-import com.neurotec.samples.server.enums.Task;
-import com.neurotec.samples.server.util.GridBagUtils;
-import com.neurotec.samples.server.util.MessageUtils;
-import com.neurotec.samples.util.Utils;
-
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Frame;
@@ -18,7 +9,7 @@ import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -32,6 +23,15 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
+
+import com.neurotec.biometrics.NBiometricOperation;
+import com.neurotec.biometrics.NBiometricTask;
+import com.neurotec.samples.server.TaskListener;
+import com.neurotec.samples.server.TaskSender;
+import com.neurotec.samples.server.enums.Task;
+import com.neurotec.samples.server.util.GridBagUtils;
+import com.neurotec.samples.server.util.MessageUtils;
+import com.neurotec.samples.util.Utils;
 
 public final class TestSpeedPanel
         extends BasePanel {
@@ -91,7 +91,6 @@ public final class TestSpeedPanel
 
         initializePropertiesPanel();
 
-        this.lblRemaining = new JLabel("Estimated time remaining:", 2);
         this.lblCount = new JLabel("progress", 4);
         this.progressBar = new JProgressBar(0, 100);
 
@@ -99,8 +98,7 @@ public final class TestSpeedPanel
         this.gridBagUtils.addToGridBagLayout(0, 1, this, this.btnCancel);
         this.gridBagUtils.addToGridBagLayout(1, 0, 1, 3, this, this.panelProperties);
         this.gridBagUtils.addToGridBagLayout(2, 0, 1, 1, 1, 0, this, new JLabel());
-        this.gridBagUtils.addToGridBagLayout(0, 3, 1, 1, 0, 0, this, this.lblRemaining);
-        this.gridBagUtils.addToGridBagLayout(3, 3, 1, 1, 0, 0, this, this.lblCount);
+        this.gridBagUtils.addToGridBagLayout(0, 3, 1, 1, 0, 0, this, this.lblCount);
         this.gridBagUtils.addToGridBagLayout(0, 4, 4, 1, this, this.progressBar);
         this.gridBagUtils.addToGridBagLayout(0, 5, 4, 1, 0, 1, this, initializeResultsPanel());
     }
@@ -257,13 +255,6 @@ public final class TestSpeedPanel
         df.applyPattern("###,###.##");
         this.txtSpeed.setText(df.format(speed));
         this.txtTime.setText(String.format("%.2f s", new Object[]{Double.valueOf(timeElapsedSec)}));
-
-        int maxCount = ((Integer) this.spinnerMaxCount.getValue()).intValue();
-        long remaining = Math.round((float) (timeElapsed / templatesMatched * (maxCount - templatesMatched)));
-        long hr = TimeUnit.MILLISECONDS.toHours(remaining);
-        long min = TimeUnit.MILLISECONDS.toMinutes(remaining - TimeUnit.HOURS.toMillis(hr));
-        long sec = TimeUnit.MILLISECONDS.toSeconds(remaining - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min));
-        this.lblRemaining.setText(String.format("Estimated time remaining: %02d:%02d:%02d", new Object[]{Long.valueOf(hr), Long.valueOf(min), Long.valueOf(sec)}));
 
         this.progressBar.setValue(templatesMatched);
         this.lblCount.setText(String.format("%s / %s", new Object[]{Integer.valueOf(templatesMatched), Integer.valueOf(this.progressBar.getMaximum())}));

@@ -1,15 +1,5 @@
 package com.neurotec.samples.server.controls;
 
-import com.neurotec.biometrics.NBiometricOperation;
-import com.neurotec.biometrics.NBiometricTask;
-import com.neurotec.samples.server.EnrollmentCompleteListener;
-import com.neurotec.samples.server.TaskListener;
-import com.neurotec.samples.server.TaskSender;
-import com.neurotec.samples.server.enums.Task;
-import com.neurotec.samples.server.util.GridBagUtils;
-import com.neurotec.samples.server.util.MessageUtils;
-import com.neurotec.samples.util.Utils;
-
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Frame;
@@ -18,6 +8,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -32,6 +23,15 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
+import com.neurotec.biometrics.NBiometricOperation;
+import com.neurotec.biometrics.NBiometricTask;
+import com.neurotec.samples.server.EnrollmentCompleteListener;
+import com.neurotec.samples.server.TaskListener;
+import com.neurotec.samples.server.TaskSender;
+import com.neurotec.samples.server.enums.Task;
+import com.neurotec.samples.server.util.GridBagUtils;
+import com.neurotec.samples.util.Utils;
+
 
 public final class EnrollPanel
         extends BasePanel {
@@ -45,7 +45,6 @@ public final class EnrollPanel
     private JButton btnCancel;
     private Icon iconOk;
     private Icon iconError;
-    private JLabel lblRemaining;
     private JLabel lblProgress;
     private JLabel lblStatusIcon;
     private JPanel panelProperties;
@@ -91,16 +90,13 @@ public final class EnrollPanel
 
         initializePropertiesPanel();
 
-        this.lblRemaining = new JLabel("Estimated time remaining:");
         this.lblProgress = new JLabel("progress", 4);
         this.progressBar = new JProgressBar(0, 100);
 
         this.gridBagUtils.addToGridBagLayout(0, 0, this, this.btnStart);
         this.gridBagUtils.addToGridBagLayout(0, 1, this, this.btnCancel);
         this.gridBagUtils.addToGridBagLayout(1, 0, 2, 2, this, this.panelProperties);
-        this.gridBagUtils.addToGridBagLayout(0, 2, 3, 1, this, this.lblRemaining);
-        this.gridBagUtils.addToGridBagLayout(3, 2, 1, 1, 1, 0, this, new JLabel());
-        this.gridBagUtils.addToGridBagLayout(4, 2, 1, 1, 0, 0, this, this.lblProgress);
+        this.gridBagUtils.addToGridBagLayout(0, 2, 3, 1, this, this.lblProgress);
         this.gridBagUtils.addToGridBagLayout(0, 3, 5, 1, this, this.progressBar);
         this.gridBagUtils.addToGridBagLayout(0, 4, 5, 1, 0, 1, this, initializeResultsPanel());
     }
@@ -222,7 +218,7 @@ public final class EnrollPanel
             this.enrollmentTaskSender.addTaskListener(this.taskListener);
 
             this.lblProgress.setText("");
-            this.lblRemaining.setText("");
+            this.lblProgress.setText("");
             this.progressBar.setValue(0);
 
             // Automatically start enrollment if ready
@@ -236,7 +232,7 @@ public final class EnrollPanel
 
 
     private void taskSenderProgressChanged(int numberOfTasksCompleted) {
-        int maxProgress = this.progressBar.getMaximum(); // You can remove this line if you hardcode max
+        int maxProgress = this.progressBar.getMaximum();
         int progressValue = Math.min(numberOfTasksCompleted, maxProgress);
 
         // Simulate progress update in console
@@ -246,24 +242,8 @@ public final class EnrollPanel
         long elapsed = System.currentTimeMillis() - this.startTime;
         System.out.printf("Elapsed Time: %.2f s%n", elapsed / 1000.0);
 
-        // Estimate remaining time
-        long remaining;
-        if (numberOfTasksCompleted > 0) {
-            remaining = elapsed / numberOfTasksCompleted * (maxProgress - numberOfTasksCompleted);
-        } else {
-            remaining = 0L;
-        }
-
-        if (remaining < 0) {
-            remaining = 0L;
-        }
-
-        long days = TimeUnit.MILLISECONDS.toDays(remaining);
-        long hr = TimeUnit.MILLISECONDS.toHours(remaining - TimeUnit.DAYS.toMillis(days));
-        long min = TimeUnit.MILLISECONDS.toMinutes(remaining - TimeUnit.DAYS.toMillis(days) - TimeUnit.HOURS.toMillis(hr));
-        long sec = TimeUnit.MILLISECONDS.toSeconds(remaining - TimeUnit.DAYS.toMillis(days) - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min));
-
-        System.out.printf("Estimated time remaining: %02d.%02d:%02d:%02d%n", days, hr, min, sec);
+        this.progressBar.setValue(progressValue);
+        this.lblProgress.setText(String.format("%d / %d", progressValue, maxProgress));
     }
 
     private void taskSenderExceptionOccured(Exception e) {

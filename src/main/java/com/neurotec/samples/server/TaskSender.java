@@ -45,8 +45,8 @@ public final class TaskSender {
 
 
     public TaskSender(NBiometricClient biometricClient, TemplateLoader templateLoader, NBiometricOperation operation) {
-        if (biometricClient == null) throw new NullPointerException("biometricClient");
-        if (templateLoader == null) throw new NullPointerException("templateLoader");
+        if (biometricClient == null) return;
+        if (templateLoader == null) return;
         this.templateLoader = templateLoader;
         this.biometricClient = biometricClient;
         this.operation = operation;
@@ -128,7 +128,8 @@ public final class TaskSender {
 
     public void start(Task task) throws IllegalAccessException {
         if (isBusy()) {
-            throw new IllegalAccessException("Already started");
+//            throw new IllegalAccessException("Already started");
+            return;
         }
         Settings settings = PropertyLoader.getSettings();
         this.tasksSentCount = 0;
