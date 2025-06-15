@@ -51,6 +51,7 @@ import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
 import com.neurotec.samples.server.enums.Task;
 import com.neurotec.samples.server.process.NServerManager;
+import com.neurotec.samples.server.util.DataMigrationManager;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.server.util.MessageUtils;
 import com.neurotec.samples.server.util.PropertyLoader;
@@ -446,7 +447,7 @@ public final class DeduplicationPanel
         
         // Add detailed progress logging for each template
         double percentage = ((double) (actualProgress - this.startIndex) / (this.progressBar.getMaximum() - this.startIndex)) * 100;
-        System.out.println("\nProgress: " + numberOfTasksCompleted + " templates processed since index " + this.startIndex +
+        System.out.println("\nProgress: " + numberOfTasksCompleted + " templates processed "+
                           " (Template " + actualProgress + " of " + this.progressBar.getMaximum() +
                           ", " + String.format("%.2f", percentage) + "%)");
     }
@@ -487,6 +488,31 @@ public final class DeduplicationPanel
             MessageUtils.showInformation(this, "Previous process is not completed yet.");
             return;
         }
+
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                System.out.println("Deleting old entries before deduplication...");
+                DataMigrationManager migrationManager = new DataMigrationManager();
+                migrationManager.runMigration();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    System.out.println("Deletion of old entries completed.");
+                    proceedWithDeduplication();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    MessageUtils.showError(DeduplicationPanel.this, e.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    private void proceedWithDeduplication() {
         setStatus("Preparing ...", Color.BLACK, (Icon) null);
         this.lblProgress.setText("");
         enableControls(false);
@@ -539,7 +565,7 @@ public final class DeduplicationPanel
                         return;
                     }
 
-                    System.out.println("Starting from index " + startIndex + ", processing templates " + startIndex + " to " + (templateCount - 1) + " out of " + templateCount + " total templates");
+                    System.out.println("Processing "+ templateCount +" templates");
 
                     getBiometricClient().setMatchingWithDetails(true);
                     deduplicationTaskSender.setBunchSize(350);

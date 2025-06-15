@@ -1,13 +1,17 @@
 package com.neurotec.samples.server.util;
 
-import com.neurotec.samples.server.settings.Settings;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
+
+import com.neurotec.samples.server.settings.Settings;
 
 public class PropertyLoader {
 
@@ -86,5 +90,55 @@ public class PropertyLoader {
         settings.setIdColumn(getIdColumn());
 
         return settings;
+    }
+
+    public static String getProdDSN() {
+        return properties.getProperty("prod.database.dsn");
+    }
+
+    public static String getProdUser() {
+        return properties.getProperty("prod.database.username");
+    }
+
+    public static String getProdPassword() {
+        return properties.getProperty("prod.database.password");
+    }
+
+    public static String getProdTable() {
+        return properties.getProperty("prod.database.table");
+    }
+
+    public static String getProdTemplateColumn() {
+        return properties.getProperty("prod.database.template.column");
+    }
+
+    public static String getProdIdColumn() {
+        return properties.getProperty("prod.database.id.column");
+    }
+
+    public static long getTableMaxId() {
+        return Long.parseLong(properties.getProperty("table.max.id", "0"));
+    }
+
+    public static void setTableMaxId(long maxId) {
+        properties.setProperty("table.max.id", String.valueOf(maxId));
+        try {
+            Path path = Paths.get(fileName);
+            List<String> lines = Files.readAllLines(path);
+            boolean found = false;
+            for (int i = 0; i < lines.size(); i++) {
+                if (lines.get(i).trim().startsWith("table.max.id")) {
+                    lines.set(i, "table.max.id=" + maxId);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                lines.add("table.max.id=" + maxId);
+            }
+            Files.write(path, lines);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing to properties file", e);
+        }
     }
 }

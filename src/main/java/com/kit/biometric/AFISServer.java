@@ -30,9 +30,6 @@ public final class AFISServer {
         licenses.add("Biometrics.FingerClient");
 
         try {
-            if (!NLicense.obtain("/local", 5000, "FingerExtractor")) {
-                System.err.format("Could not obtain license: %s%n", new Object[]{"FingerExtractor"});
-            }
             if (!NLicense.obtain("/local", 5000, "FingerClient")) {
                 System.err.format("Could not obtain license: %s%n", new Object[]{"FingerClient"});
             }

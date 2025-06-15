@@ -20,6 +20,7 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingWorker;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
@@ -29,6 +30,7 @@ import com.neurotec.samples.server.EnrollmentCompleteListener;
 import com.neurotec.samples.server.TaskListener;
 import com.neurotec.samples.server.TaskSender;
 import com.neurotec.samples.server.enums.Task;
+import com.neurotec.samples.server.util.DataMigrationManager;
 import com.neurotec.samples.server.util.GridBagUtils;
 import com.neurotec.samples.util.Utils;
 
@@ -42,6 +44,7 @@ public final class EnrollPanel
     private GridBagUtils gridBagUtils;
     private TaskListener taskListener;
     private JButton btnStart;
+    private JButton btnMigrate;
     private JButton btnCancel;
     private Icon iconOk;
     private Icon iconError;
@@ -84,6 +87,9 @@ public final class EnrollPanel
         this.btnStart = new JButton("Start");
         this.btnStart.addActionListener(this);
 
+        this.btnMigrate = new JButton("Migrate & Enroll");
+        this.btnMigrate.addActionListener(this);
+
         this.btnCancel = new JButton("Cancel");
         this.btnCancel.setEnabled(false);
         this.btnCancel.addActionListener(this);
@@ -94,8 +100,9 @@ public final class EnrollPanel
         this.progressBar = new JProgressBar(0, 100);
 
         this.gridBagUtils.addToGridBagLayout(0, 0, this, this.btnStart);
+        this.gridBagUtils.addToGridBagLayout(1, 0, this, this.btnMigrate);
         this.gridBagUtils.addToGridBagLayout(0, 1, this, this.btnCancel);
-        this.gridBagUtils.addToGridBagLayout(1, 0, 2, 2, this, this.panelProperties);
+        this.gridBagUtils.addToGridBagLayout(1, 1, 2, 2, this, this.panelProperties);
         this.gridBagUtils.addToGridBagLayout(0, 2, 3, 1, this, this.lblProgress);
         this.gridBagUtils.addToGridBagLayout(0, 3, 5, 1, this, this.progressBar);
         this.gridBagUtils.addToGridBagLayout(0, 4, 5, 1, 0, 1, this, initializeResultsPanel());
@@ -342,6 +349,32 @@ public final class EnrollPanel
             startEnrolling();
         } else if (source == this.btnCancel) {
             cancel();
+        } else if (source == this.btnMigrate) {
+            runMigrationAndEnroll();
         }
+    }
+
+    private void runMigrationAndEnroll() {
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                System.out.println("Starting data migration...");
+                DataMigrationManager migrationManager = new DataMigrationManager();
+                migrationManager.runMigration();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    System.out.println("Data migration completed successfully.");
+                    startEnrolling();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("Data migration failed: " + e.getMessage());
+                }
+            }
+        }.execute();
     }
 }
